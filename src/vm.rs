@@ -16,5 +16,9 @@ pub enum Value {
     Char(char),
     String(String),
     Tuple(Vec<Value>),
-    Func(expr::Func),
+    Func {
+        params: Vec<expr::Id>,
+        env: HashMap<expr::Id, Value>,
+        body: expr::Block,
+    },
 }

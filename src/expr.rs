@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-#[derive(PartialEq, Debug, PartialOrd, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Expr {
     Var(Id),
     I32(i32),
@@ -12,25 +10,27 @@ pub enum Expr {
     String(String),
     Tuple(Vec<Id>),
     Apply(Id, Vec<Id>),
+    Fn(Vec<Id>, Box<Block>),
     If(Id, Box<Block>, Box<Block>),
 }
 
-#[derive(PartialEq, Debug, PartialOrd, Clone)]
-pub struct Let {
-    var: Id,
-    val: Box<Expr>,
+#[derive(PartialEq, Debug, Clone)]
+pub enum Let {
+    NonRec { name: Id, val: Expr },
+    Rec { name: Id, val: Expr },
 }
 
-#[derive(PartialEq, Debug, PartialOrd, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Block {
     block: Vec<Let>,
+    term: Expr,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Func {
     name: Id,
     params: Vec<Id>,
-    body: HashMap<String, Block>,
+    body: Block,
 }
 
 #[derive(PartialEq, Debug, Clone)]
