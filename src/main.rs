@@ -1,4 +1,5 @@
 mod expr;
+mod vm;
 use std::io;
 
 fn main() -> io::Result<()> {
