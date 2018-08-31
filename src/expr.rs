@@ -38,7 +38,7 @@ pub struct Program {
     program: Vec<Func>
 }
 
-#[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone)]
+#[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash)]
 pub enum Type {
     Int {size: i8},
     Float32,
@@ -48,7 +48,7 @@ pub enum Type {
     Function {codom: Box<Type>, dom: Vec<Type>}
 }
 
-#[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone)]
+#[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash)]
 pub struct Id {
     name: String,
     uniq: u64,
