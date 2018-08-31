@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use expr;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct VM {
-    env: HashMap<expr::Id, Value>
+    env: HashMap<expr::Id, Value>,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -16,5 +16,5 @@ pub enum Value {
     Char(char),
     String(String),
     Tuple(Vec<Value>),
-    Func(expr::Func)
+    Func(expr::Func),
 }

@@ -12,45 +12,45 @@ pub enum Expr {
     String(String),
     Tuple(Vec<Id>),
     Apply(Id, Vec<Id>),
-    If(Id, Box<Block>, Box<Block>)
+    If(Id, Box<Block>, Box<Block>),
 }
 
 #[derive(PartialEq, Debug, PartialOrd, Clone)]
 pub struct Let {
     var: Id,
-    val: Box<Expr>
+    val: Box<Expr>,
 }
 
 #[derive(PartialEq, Debug, PartialOrd, Clone)]
 pub struct Block {
-    block: Vec<Let>
+    block: Vec<Let>,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Func {
     name: Id,
     params: Vec<Id>,
-    body: HashMap<String, Block>
+    body: HashMap<String, Block>,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Program {
-    program: Vec<Func>
+    program: Vec<Func>,
 }
 
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash)]
 pub enum Type {
-    Int {size: i8},
+    Int { size: i8 },
     Float32,
     Float64,
     Pointer(Box<Type>),
     Struct(Vec<Type>),
-    Function {codom: Box<Type>, dom: Vec<Type>}
+    Function { codom: Box<Type>, dom: Vec<Type> },
 }
 
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash)]
 pub struct Id {
     name: String,
     uniq: u64,
-    ty: Type
+    ty: Type,
 }
