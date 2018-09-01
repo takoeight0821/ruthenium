@@ -1,3 +1,4 @@
+mod types;
 mod expr;
 mod vm;
 use std::io;
