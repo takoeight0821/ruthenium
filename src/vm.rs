@@ -3,9 +3,10 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use types::*;
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct VM {
     env: HashMap<expr::Id, Value>,
+    prims: HashMap<String, Rc<Fn(&VM, Vec<Value>) -> Value>>,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -18,6 +19,7 @@ pub enum Value {
     Char(char),
     String(Rc<String>),
     Tuple(Rc<Vec<Value>>),
+    Prim(String, Type),
     Func {
         params: Vec<expr::Id>,
         env: HashMap<expr::Id, Value>,
@@ -38,6 +40,7 @@ impl HasType for Value {
             Value::Tuple(xs) => Type::Pointer(Box::new(Type::Struct(
                 xs.iter().map(|x| x.type_()).collect(),
             ))),
+            Value::Prim(_, t) => t.clone(),
             Value::Func { params, body, .. } => Type::Function {
                 codom: Box::new(body.type_()),
                 dom: params.iter().map(|x| x.type_()).collect(),
@@ -50,6 +53,7 @@ impl VM {
     pub fn new() -> Self {
         VM {
             env: HashMap::new(),
+            prims: HashMap::new(),
         }
     }
 
@@ -84,6 +88,17 @@ impl VM {
                     self.env.insert(name.clone(), v);
                 }
                 expr::Let::Rec { name, params, body } => {
+                    match name.type_() {
+                        Type::Function { codom, dom } => {
+                            assert_eq!(body.type_(), codom.type_());
+                            assert_eq!(
+                                params.iter().map(|x| x.type_()).collect::<Vec<_>>(),
+                                dom.iter().map(|x| x.type_()).collect::<Vec<_>>()
+                            );
+                        }
+                        t => panic!("{:?} is not function type", t),
+                    };
+
                     self.load_function(expr::Func {
                         name: name.clone(),
                         params: params.clone(),
@@ -105,7 +120,46 @@ impl VM {
             Expr::F64(f) => Value::F64(f.clone()),
             Expr::Bool(b) => Value::Bool(b.clone()),
             Expr::Char(c) => Value::Char(c.clone()),
-            _ => panic!("not implemented"),
+            Expr::String(s) => Value::String(Rc::new(s.clone())),
+            Expr::Tuple(xs) => {
+                let xs: Vec<Value> = xs
+                    .iter()
+                    .map(|x| self.env.get(x).unwrap().clone())
+                    .collect();
+                Value::Tuple(Rc::new(xs))
+            }
+            Expr::Apply(f, args) => {
+                let f = self.env.get(f).unwrap();
+                let args: Vec<_> = args
+                    .iter()
+                    .map(|x| self.env.get(x).unwrap().clone())
+                    .collect();
+                match f {
+                    Value::Func { params, env, body } => {
+                        let mut env = env.clone();
+                        params.iter().zip(args.iter()).for_each(|(p, a)| {
+                            env.insert(p.clone(), a.clone());
+                        });
+                        let mut vm = VM::new();
+                        vm.env = env;
+                        vm.eval_block(body.clone())
+                    }
+                    Value::Prim(key, _) => {
+                        let f = self.prims.get(key).unwrap();
+                        f(&self, args)
+                    }
+                    v => panic!("{:?} is not appliable", v),
+                }
+            }
+            Expr::Prim(key, t) => Value::Prim(key.clone(), t.clone()),
+            Expr::If(c, t, f) => {
+                let c = self.env.get(c).unwrap().clone();
+                match c {
+                    Value::Bool(false) => self.eval_block(*f.clone()),
+                    Value::Bool(true) => self.eval_block(*t.clone()),
+                    v => panic!("{:?} is not boolean", v),
+                }
+            }
         }
     }
 }

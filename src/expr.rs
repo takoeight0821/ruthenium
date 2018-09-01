@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use types::{HasType, Type};
 
 #[derive(PartialEq, Debug, Clone)]
@@ -13,7 +12,7 @@ pub enum Expr {
     String(String),
     Tuple(Vec<Id>),
     Apply(Id, Vec<Id>),
-    Fn(Vec<Id>, Box<Block>),
+    Prim(String, Type),
     If(Id, Box<Block>, Box<Block>),
 }
 
@@ -35,10 +34,7 @@ impl HasType for Expr {
                 Type::Function { codom, .. } => codom.type_(),
                 t => panic!("{:?} is not appliable", t),
             },
-            Expr::Fn(params, body) => Type::Function {
-                codom: Box::new(body.type_()),
-                dom: params.iter().map(|x| x.type_()).collect(),
-            },
+            Expr::Prim(_, t) => t.clone(),
             Expr::If(_, t, _) => t.type_(),
         }
     }
