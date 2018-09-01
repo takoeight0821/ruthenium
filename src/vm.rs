@@ -10,6 +10,7 @@ pub struct VM {
 }
 
 #[derive(PartialEq, Debug, Clone)]
+#[allow(dead_code)]
 pub enum Value {
     I32(i32),
     I64(i64),
@@ -49,11 +50,21 @@ impl HasType for Value {
     }
 }
 
+#[allow(dead_code)]
 impl VM {
     pub fn new() -> Self {
+        let mut prims: HashMap<String, Rc<Fn(&VM, Vec<Value>) -> Value>> = HashMap::new();
+        prims.insert("add_i32".to_string(), Rc::new(VM::add_i32));
         VM {
             env: HashMap::new(),
-            prims: HashMap::new(),
+            prims: prims,
+        }
+    }
+
+    fn add_i32(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::I32(a + b),
+            _ => panic!("invalid args for add_i32: {:?}", args),
         }
     }
 
