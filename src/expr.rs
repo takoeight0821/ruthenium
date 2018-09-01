@@ -17,25 +17,25 @@ pub enum Expr {
 #[derive(PartialEq, Debug, Clone)]
 pub enum Let {
     NonRec { name: Id, val: Expr },
-    Rec { name: Id, val: Expr },
+    Rec { name: Id, params: Vec<Id>, body: Block },
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Block {
-    block: Vec<Let>,
-    term: Expr,
+    pub exprs: Vec<Let>,
+    pub term: Expr,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Func {
-    name: Id,
-    params: Vec<Id>,
-    body: Block,
+    pub name: Id,
+    pub params: Vec<Id>,
+    pub body: Block,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Program {
-    program: Vec<Func>,
+    pub program: Vec<Func>,
 }
 
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash)]
