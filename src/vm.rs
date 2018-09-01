@@ -52,17 +52,193 @@ impl HasType for Value {
 impl VM {
     pub fn new() -> Self {
         let mut prims: HashMap<String, Rc<Fn(&VM, Vec<Value>) -> Value>> = HashMap::new();
-        prims.insert("add_i32".to_string(), Rc::new(VM::add_i32));
+        prims.insert("add".to_string(), Rc::new(VM::add));
+        prims.insert("sub".to_string(), Rc::new(VM::sub));
+        prims.insert("mul".to_string(), Rc::new(VM::mul));
+        prims.insert("div".to_string(), Rc::new(VM::div));
+        prims.insert("mod".to_string(), Rc::new(VM::modulo));
+        prims.insert("eq".to_string(), Rc::new(VM::eq));
+        prims.insert("neq".to_string(), Rc::new(VM::neq));
+        prims.insert("lt".to_string(), Rc::new(VM::lt));
+        prims.insert("gt".to_string(), Rc::new(VM::gt));
+        prims.insert("le".to_string(), Rc::new(VM::le));
+        prims.insert("ge".to_string(), Rc::new(VM::ge));
+        prims.insert("and".to_string(), Rc::new(VM::and));
+        prims.insert("or".to_string(), Rc::new(VM::or));
         VM {
             env: HashMap::new(),
             prims: prims,
         }
     }
 
-    fn add_i32(&self, args: Vec<Value>) -> Value {
+    fn add(&self, args: Vec<Value>) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::I32(a + b),
-            _ => panic!("invalid args for add_i32: {:?}", args),
+            [Value::I64(a), Value::I64(b)] => Value::I64(a + b),
+            [Value::F32(a), Value::F32(b)] => Value::F32(a + b),
+            [Value::F64(a), Value::F64(b)] => Value::F64(a + b),
+            _ => panic!("invalid args for add: {:?}", args),
+        }
+    }
+    fn sub(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::I32(a - b),
+            [Value::I64(a), Value::I64(b)] => Value::I64(a - b),
+            [Value::F32(a), Value::F32(b)] => Value::F32(a - b),
+            [Value::F64(a), Value::F64(b)] => Value::F64(a - b),
+            _ => panic!("invalid args for sub: {:?}", args),
+        }
+    }
+    fn mul(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::I32(a * b),
+            [Value::I64(a), Value::I64(b)] => Value::I64(a * b),
+            [Value::F32(a), Value::F32(b)] => Value::F32(a * b),
+            [Value::F64(a), Value::F64(b)] => Value::F64(a * b),
+            _ => panic!("invalid args for mul: {:?}", args),
+        }
+    }
+    fn div(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::I32(a / b),
+            [Value::I64(a), Value::I64(b)] => Value::I64(a / b),
+            [Value::F32(a), Value::F32(b)] => Value::F32(a / b),
+            [Value::F64(a), Value::F64(b)] => Value::F64(a / b),
+            _ => panic!("invalid args for div: {:?}", args),
+        }
+    }
+    fn modulo(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::I32(a % b),
+            [Value::I64(a), Value::I64(b)] => Value::I64(a % b),
+            _ => panic!("invalid args for mod: {:?}", args),
+        }
+    }
+    fn eq(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::Bool(a == b),
+            [Value::I64(a), Value::I64(b)] => Value::Bool(a == b),
+            [Value::F32(a), Value::F32(b)] => Value::Bool(a == b),
+            [Value::F64(a), Value::F64(b)] => Value::Bool(a == b),
+            [Value::Bool(a), Value::Bool(b)] => Value::Bool(a == b),
+            [Value::Char(a), Value::Char(b)] => Value::Bool(a == b),
+            [Value::String(ref a), Value::String(ref b)] => Value::Bool(a == b),
+            [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
+                xs.iter()
+                    .zip(ys.iter())
+                    .map(|(x, y)| self.eq(vec![x.clone(), y.clone()]))
+                    .all(|x| x == Value::Bool(true)),
+            ),
+            _ => panic!("invalit args for eq: {:?}", args),
+        }
+    }
+
+    fn neq(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::Bool(a != b),
+            [Value::I64(a), Value::I64(b)] => Value::Bool(a != b),
+            [Value::F32(a), Value::F32(b)] => Value::Bool(a != b),
+            [Value::F64(a), Value::F64(b)] => Value::Bool(a != b),
+            [Value::Bool(a), Value::Bool(b)] => Value::Bool(a != b),
+            [Value::Char(a), Value::Char(b)] => Value::Bool(a != b),
+            [Value::String(ref a), Value::String(ref b)] => Value::Bool(a != b),
+            [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
+                xs.iter()
+                    .zip(ys.iter())
+                    .map(|(x, y)| self.neq(vec![x.clone(), y.clone()]))
+                    .all(|x| x == Value::Bool(true)),
+            ),
+            _ => panic!("invalit args for neq: {:?}", args),
+        }
+    }
+
+    fn lt(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::Bool(a < b),
+            [Value::I64(a), Value::I64(b)] => Value::Bool(a < b),
+            [Value::F32(a), Value::F32(b)] => Value::Bool(a < b),
+            [Value::F64(a), Value::F64(b)] => Value::Bool(a < b),
+            [Value::Bool(a), Value::Bool(b)] => Value::Bool(a < b),
+            [Value::Char(a), Value::Char(b)] => Value::Bool(a < b),
+            [Value::String(ref a), Value::String(ref b)] => Value::Bool(a < b),
+            [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
+                xs.iter()
+                    .zip(ys.iter())
+                    .map(|(x, y)| self.lt(vec![x.clone(), y.clone()]))
+                    .all(|x| x == Value::Bool(true)),
+            ),
+            _ => panic!("invalit args for lt: {:?}", args),
+        }
+    }
+
+    fn gt(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::Bool(a > b),
+            [Value::I64(a), Value::I64(b)] => Value::Bool(a > b),
+            [Value::F32(a), Value::F32(b)] => Value::Bool(a > b),
+            [Value::F64(a), Value::F64(b)] => Value::Bool(a > b),
+            [Value::Bool(a), Value::Bool(b)] => Value::Bool(a > b),
+            [Value::Char(a), Value::Char(b)] => Value::Bool(a > b),
+            [Value::String(ref a), Value::String(ref b)] => Value::Bool(a > b),
+            [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
+                xs.iter()
+                    .zip(ys.iter())
+                    .map(|(x, y)| self.gt(vec![x.clone(), y.clone()]))
+                    .all(|x| x == Value::Bool(true)),
+            ),
+            _ => panic!("invalit args for gt: {:?}", args),
+        }
+    }
+
+    fn ge(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::Bool(a >= b),
+            [Value::I64(a), Value::I64(b)] => Value::Bool(a >= b),
+            [Value::F32(a), Value::F32(b)] => Value::Bool(a >= b),
+            [Value::F64(a), Value::F64(b)] => Value::Bool(a >= b),
+            [Value::Bool(a), Value::Bool(b)] => Value::Bool(a >= b),
+            [Value::Char(a), Value::Char(b)] => Value::Bool(a >= b),
+            [Value::String(ref a), Value::String(ref b)] => Value::Bool(a >= b),
+            [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
+                xs.iter()
+                    .zip(ys.iter())
+                    .map(|(x, y)| self.ge(vec![x.clone(), y.clone()]))
+                    .all(|x| x == Value::Bool(true)),
+            ),
+            _ => panic!("invalit args for ge: {:?}", args),
+        }
+    }
+
+    fn le(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::I32(a), Value::I32(b)] => Value::Bool(a <= b),
+            [Value::I64(a), Value::I64(b)] => Value::Bool(a <= b),
+            [Value::F32(a), Value::F32(b)] => Value::Bool(a <= b),
+            [Value::F64(a), Value::F64(b)] => Value::Bool(a <= b),
+            [Value::Bool(a), Value::Bool(b)] => Value::Bool(a <= b),
+            [Value::Char(a), Value::Char(b)] => Value::Bool(a <= b),
+            [Value::String(ref a), Value::String(ref b)] => Value::Bool(a <= b),
+            [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
+                xs.iter()
+                    .zip(ys.iter())
+                    .map(|(x, y)| self.le(vec![x.clone(), y.clone()]))
+                    .all(|x| x == Value::Bool(true)),
+            ),
+            _ => panic!("invalit args for le: {:?}", args),
+        }
+    }
+
+    fn and(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::Bool(a), Value::Bool(b)] => Value::Bool(a & b),
+            _ => panic!("invalit args for and: {:?}", args),
+        }
+    }
+
+    fn or(&self, args: Vec<Value>) -> Value {
+        match args[..] {
+            [Value::Bool(a), Value::Bool(b)] => Value::Bool(a | b),
+            _ => panic!("invalit args for or: {:?}", args),
         }
     }
 
