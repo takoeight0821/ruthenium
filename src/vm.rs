@@ -1,6 +1,7 @@
 use expr;
 use std::collections::HashMap;
 use std::rc::Rc;
+use types::*;
 
 #[derive(Debug)]
 pub struct VM {
@@ -24,6 +25,27 @@ pub enum Value {
     },
 }
 
+impl HasType for Value {
+    fn type_(&self) -> Type {
+        match self {
+            Value::I32(_) => Type::Int(32),
+            Value::I64(_) => Type::Int(64),
+            Value::F32(_) => Type::Float32,
+            Value::F64(_) => Type::Float64,
+            Value::Bool(_) => Type::Int(1),
+            Value::Char(_) => Type::Int(8),
+            Value::String(_) => Type::Pointer(Box::new(Type::Int(8))),
+            Value::Tuple(xs) => Type::Pointer(Box::new(Type::Struct(
+                xs.iter().map(|x| x.type_()).collect(),
+            ))),
+            Value::Func { params, body, .. } => Type::Function {
+                codom: Box::new(body.type_()),
+                dom: params.iter().map(|x| x.type_()).collect(),
+            },
+        }
+    }
+}
+
 impl VM {
     pub fn new() -> Self {
         VM {
@@ -43,17 +65,12 @@ impl VM {
     }
 
     fn load_function(&mut self, func: expr::Func) {
-        let env_copy = self.env.clone();
+        let env = self.env.clone();
         match func {
             expr::Func { name, params, body } => {
-                self.env.insert(
-                    name,
-                    Value::Func {
-                        params: params,
-                        env: env_copy,
-                        body: body,
-                    },
-                );
+                let f = Value::Func { params, env, body };
+                assert_eq!(name.type_(), f.type_());
+                self.env.insert(name, f);
             }
         }
     }
@@ -63,6 +80,7 @@ impl VM {
             match l {
                 expr::Let::NonRec { name, val } => {
                     let v = self.eval_expr(&val);
+                    assert_eq!(name.type_(), v.type_());
                     self.env.insert(name.clone(), v);
                 }
                 expr::Let::Rec { name, params, body } => {
@@ -80,16 +98,14 @@ impl VM {
     fn eval_expr(&mut self, expr: &expr::Expr) -> Value {
         use expr::Expr;
         match expr {
-            Expr::Var(id) => {
-                self.env.get(id).unwrap().clone()
-            },
+            Expr::Var(id) => self.env.get(id).unwrap().clone(),
             Expr::I32(i) => Value::I32(i.clone()),
             Expr::I64(i) => Value::I64(i.clone()),
             Expr::F32(f) => Value::F32(f.clone()),
             Expr::F64(f) => Value::F64(f.clone()),
             Expr::Bool(b) => Value::Bool(b.clone()),
             Expr::Char(c) => Value::Char(c.clone()),
-            _ => { panic!("not implemented") }
+            _ => panic!("not implemented"),
         }
     }
 }

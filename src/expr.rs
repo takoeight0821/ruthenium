@@ -29,15 +29,15 @@ impl HasType for Expr {
             Expr::Char(_) => Type::Int(8),
             Expr::String(_) => Type::Pointer(Box::new(Type::Int(8))),
             Expr::Tuple(xs) => Type::Pointer(Box::new(Type::Struct(
-                xs.iter().map(|x| x.type_().clone()).collect(),
+                xs.iter().map(|x| x.type_()).collect(),
             ))),
             Expr::Apply(f, _) => match f.type_() {
-                Type::Function { codom, .. } => codom.deref().clone(),
+                Type::Function { codom, .. } => codom.type_(),
                 t => panic!("{:?} is not appliable", t),
             },
             Expr::Fn(params, body) => Type::Function {
-                codom: Box::new(body.type_().clone()),
-                dom: params.iter().map(|x| x.type_().clone()).collect(),
+                codom: Box::new(body.type_()),
+                dom: params.iter().map(|x| x.type_()).collect(),
             },
             Expr::If(_, t, _) => t.type_(),
         }

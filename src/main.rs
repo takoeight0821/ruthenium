@@ -1,5 +1,5 @@
-mod types;
 mod expr;
+mod types;
 mod vm;
 use std::io;
 
