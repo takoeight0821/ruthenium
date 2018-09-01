@@ -1,7 +1,7 @@
 use expr;
+use expr::{HasType, Type};
 use std::collections::HashMap;
 use std::rc::Rc;
-use types::*;
 
 #[derive(Clone)]
 pub struct VM {
@@ -29,7 +29,7 @@ pub enum Value {
 }
 
 impl HasType for Value {
-    fn type_(&self) -> Type {
+    fn type_of(&self) -> Type {
         match self {
             Value::I32(_) => Type::Int(32),
             Value::I64(_) => Type::Int(64),
@@ -38,11 +38,11 @@ impl HasType for Value {
             Value::Bool(_) => Type::Int(1),
             Value::Char(_) => Type::Int(8),
             Value::String(_) => Type::String,
-            Value::Tuple(xs) => Type::Tuple(xs.iter().map(|x| x.type_()).collect()),
+            Value::Tuple(xs) => Type::Tuple(xs.iter().map(HasType::type_of).collect()),
             Value::Prim(_, t) => t.clone(),
             Value::Func { params, body, .. } => Type::Function {
-                codom: Box::new(body.type_()),
-                dom: params.iter().map(|x| x.type_()).collect(),
+                codom: Box::new(body.type_of()),
+                dom: params.iter().map(HasType::type_of).collect(),
             },
         }
     }
@@ -85,7 +85,7 @@ impl VM {
                     env: self.env.clone(),
                     body: body,
                 };
-                assert_eq!(name.type_(), f.type_());
+                assert_eq!(name.type_of(), f.type_of());
                 self.env.insert(name, f);
             }
         }
@@ -96,16 +96,16 @@ impl VM {
             match l {
                 expr::Let::NonRec { name, val } => {
                     let v = self.eval_expr(&val);
-                    assert_eq!(name.type_(), v.type_());
+                    assert_eq!(name.type_of(), v.type_of());
                     self.env.insert(name.clone(), v);
                 }
                 expr::Let::Rec { name, params, body } => {
-                    match name.type_() {
+                    match name.type_of() {
                         Type::Function { codom, dom } => {
-                            assert_eq!(body.type_(), codom.type_());
+                            assert_eq!(body.type_of(), codom.type_of());
                             assert_eq!(
-                                params.iter().map(|x| x.type_()).collect::<Vec<_>>(),
-                                dom.iter().map(|x| x.type_()).collect::<Vec<_>>()
+                                params.iter().map(HasType::type_of).collect::<Vec<_>>(),
+                                dom.iter().map(HasType::type_of).collect::<Vec<_>>()
                             );
                         }
                         t => panic!("{:?} is not function type", t),
@@ -133,13 +133,11 @@ impl VM {
             Expr::Bool(b) => Value::Bool(b.clone()),
             Expr::Char(c) => Value::Char(c.clone()),
             Expr::String(s) => Value::String(Rc::new(s.clone())),
-            Expr::Tuple(xs) => {
-                let xs: Vec<Value> = xs
-                    .iter()
+            Expr::Tuple(xs) => Value::Tuple(Rc::new(
+                xs.iter()
                     .map(|x| self.env.get(x).unwrap().clone())
-                    .collect();
-                Value::Tuple(Rc::new(xs))
-            }
+                    .collect(),
+            )),
             Expr::Access(x, i) => {
                 let x = self.env.get(x).unwrap();
                 match x {
