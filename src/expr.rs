@@ -12,6 +12,7 @@ pub enum Expr {
     Char(char),
     String(String),
     Tuple(Vec<Id>),
+    Access(Id, usize),
     Apply(Id, Vec<Id>),
     Prim(String, Type),
     If(Id, Box<Block>, Box<Block>),
@@ -27,10 +28,12 @@ impl HasType for Expr {
             Expr::F64(_) => Type::Float64,
             Expr::Bool(_) => Type::Int(1),
             Expr::Char(_) => Type::Int(8),
-            Expr::String(_) => Type::Pointer(Box::new(Type::Int(8))),
-            Expr::Tuple(xs) => Type::Pointer(Box::new(Type::Struct(
-                xs.iter().map(|x| x.type_()).collect(),
-            ))),
+            Expr::String(_) => Type::String,
+            Expr::Tuple(xs) => Type::Tuple(xs.iter().map(|x| x.type_()).collect()),
+            Expr::Access(x, i) => match x.type_() {
+                Type::Tuple(ts) => ts.iter().nth(*i).unwrap().clone(),
+                t => panic!("{:?} is not accessable", t),
+            },
             Expr::Apply(f, _) => match f.type_() {
                 Type::Function { codom, .. } => codom.type_(),
                 t => panic!("{:?} is not appliable", t),

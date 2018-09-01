@@ -37,10 +37,8 @@ impl HasType for Value {
             Value::F64(_) => Type::Float64,
             Value::Bool(_) => Type::Int(1),
             Value::Char(_) => Type::Int(8),
-            Value::String(_) => Type::Pointer(Box::new(Type::Int(8))),
-            Value::Tuple(xs) => Type::Pointer(Box::new(Type::Struct(
-                xs.iter().map(|x| x.type_()).collect(),
-            ))),
+            Value::String(_) => Type::String,
+            Value::Tuple(xs) => Type::Tuple(xs.iter().map(|x| x.type_()).collect()),
             Value::Prim(_, t) => t.clone(),
             Value::Func { params, body, .. } => Type::Function {
                 codom: Box::new(body.type_()),
@@ -80,10 +78,13 @@ impl VM {
     }
 
     fn load_function(&mut self, func: expr::Func) {
-        let env = self.env.clone();
         match func {
             expr::Func { name, params, body } => {
-                let f = Value::Func { params, env, body };
+                let f = Value::Func {
+                    params: params,
+                    env: self.env.clone(),
+                    body: body,
+                };
                 assert_eq!(name.type_(), f.type_());
                 self.env.insert(name, f);
             }
@@ -138,6 +139,13 @@ impl VM {
                     .map(|x| self.env.get(x).unwrap().clone())
                     .collect();
                 Value::Tuple(Rc::new(xs))
+            }
+            Expr::Access(x, i) => {
+                let x = self.env.get(x).unwrap();
+                match x {
+                    Value::Tuple(xs) => xs.iter().nth(*i).unwrap().clone(),
+                    _ => panic!("{:?} is not tuple", x),
+                }
             }
             Expr::Apply(f, args) => {
                 let f = self.env.get(f).unwrap();

@@ -3,8 +3,8 @@ pub enum Type {
     Int(i8),
     Float32,
     Float64,
-    Pointer(Box<Type>),
-    Struct(Vec<Type>),
+    String,
+    Tuple(Vec<Type>),
     Function { codom: Box<Type>, dom: Vec<Type> },
 }
 
