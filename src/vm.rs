@@ -1,11 +1,10 @@
-use expr;
-use expr::{HasType, Type};
+use expr::{Block, Expr, Func, HasType, Id, Let, Program, Type};
 use std::collections::HashMap;
 use std::rc::Rc;
 
 #[derive(Clone)]
 pub struct VM {
-    env: HashMap<expr::Id, Value>,
+    env: HashMap<Id, Value>,
     prims: HashMap<String, Rc<Fn(&VM, Vec<Value>) -> Value>>,
 }
 
@@ -22,25 +21,26 @@ pub enum Value {
     Tuple(Rc<Vec<Value>>),
     Prim(String, Type),
     Func {
-        params: Vec<expr::Id>,
-        env: HashMap<expr::Id, Value>,
-        body: expr::Block,
+        params: Vec<Id>,
+        env: HashMap<Id, Value>,
+        body: Block,
     },
 }
 
 impl HasType for Value {
     fn type_of(&self) -> Type {
+        use self::Value::*;
         match self {
-            Value::I32(_) => Type::Int(32),
-            Value::I64(_) => Type::Int(64),
-            Value::F32(_) => Type::Float32,
-            Value::F64(_) => Type::Float64,
-            Value::Bool(_) => Type::Int(1),
-            Value::Char(_) => Type::Int(8),
-            Value::String(_) => Type::String,
-            Value::Tuple(xs) => Type::Tuple(xs.iter().map(HasType::type_of).collect()),
-            Value::Prim(_, t) => t.clone(),
-            Value::Func { params, body, .. } => Type::Function {
+            I32(_) => Type::Int(32),
+            I64(_) => Type::Int(64),
+            F32(_) => Type::Float32,
+            F64(_) => Type::Float64,
+            Bool(_) => Type::Int(1),
+            Char(_) => Type::Int(8),
+            String(_) => Type::String,
+            Tuple(xs) => Type::Tuple(xs.iter().map(HasType::type_of).collect()),
+            Prim(_, t) => t.clone(),
+            Func { params, body, .. } => Type::Function {
                 codom: Box::new(body.type_of()),
                 dom: params.iter().map(HasType::type_of).collect(),
             },
@@ -82,6 +82,7 @@ impl VM {
             _ => panic!("invalid args for add: {:?}", args),
         }
     }
+
     fn sub(&self, args: Vec<Value>) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::I32(a - b),
@@ -91,6 +92,7 @@ impl VM {
             _ => panic!("invalid args for sub: {:?}", args),
         }
     }
+
     fn mul(&self, args: Vec<Value>) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::I32(a * b),
@@ -100,6 +102,7 @@ impl VM {
             _ => panic!("invalid args for mul: {:?}", args),
         }
     }
+
     fn div(&self, args: Vec<Value>) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::I32(a / b),
@@ -109,6 +112,7 @@ impl VM {
             _ => panic!("invalid args for div: {:?}", args),
         }
     }
+
     fn modulo(&self, args: Vec<Value>) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::I32(a % b),
@@ -116,6 +120,7 @@ impl VM {
             _ => panic!("invalid args for mod: {:?}", args),
         }
     }
+
     fn eq(&self, args: Vec<Value>) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::Bool(a == b),
@@ -277,20 +282,20 @@ impl VM {
         Value::String(Rc::new(s))
     }
 
-    pub fn eval(&mut self, program: expr::Program, entry: expr::Block) {
+    pub fn eval(&mut self, program: Program, entry: Block) {
         self.load_functions(program.program);
         self.eval_block(entry);
     }
 
-    fn load_functions(&mut self, funcs: Vec<expr::Func>) {
+    fn load_functions(&mut self, funcs: Vec<Func>) {
         for f in funcs {
             self.load_function(f);
         }
     }
 
-    fn load_function(&mut self, func: expr::Func) {
+    fn load_function(&mut self, func: Func) {
         match func {
-            expr::Func { name, params, body } => {
+            Func { name, params, body } => {
                 let f = Value::Func {
                     params: params,
                     env: self.env.clone(),
@@ -302,15 +307,15 @@ impl VM {
         }
     }
 
-    fn eval_block(&mut self, block: expr::Block) -> Value {
+    fn eval_block(&mut self, block: Block) -> Value {
         for l in block.exprs.iter() {
             match l {
-                expr::Let::NonRec { name, val } => {
+                Let::NonRec { name, val } => {
                     let v = self.eval_expr(&val);
                     assert_eq!(name.type_of(), v.type_of());
                     self.env.insert(name.clone(), v);
                 }
-                expr::Let::Rec { name, params, body } => {
+                Let::Rec { name, params, body } => {
                     match name.type_of() {
                         Type::Function { codom, dom } => {
                             assert_eq!(body.type_of(), codom.type_of());
@@ -322,7 +327,7 @@ impl VM {
                         t => panic!("{:?} is not function type", t),
                     };
 
-                    self.load_function(expr::Func {
+                    self.load_function(Func {
                         name: name.clone(),
                         params: params.clone(),
                         body: body.clone(),
@@ -333,8 +338,7 @@ impl VM {
         self.eval_expr(&block.term)
     }
 
-    pub fn eval_expr(&mut self, expr: &expr::Expr) -> Value {
-        use expr::Expr;
+    pub fn eval_expr(&mut self, expr: &Expr) -> Value {
         match expr {
             Expr::Var(id) => self.env.get(id).unwrap().clone(),
             Expr::I32(i) => Value::I32(i.clone()),
