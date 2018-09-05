@@ -9,7 +9,15 @@ where
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
     let int_ty = (string("int"), spaces(), parse_u8()).map(|(_, _, i)| expr::Type::Int(i));
-    lex((lex(char('<')), lex(int_ty), lex(char('>'))).map(|(_, t, _)| t))
+    let float32 = (string("float"), spaces(), string("32")).map(|_| expr::Type::Float32);
+    let float64 = (string("float"), spaces(), string("64")).map(|_| expr::Type::Float64);
+
+    lex((
+        lex(char('<')),
+        choice((lex(int_ty), try(lex(float32)), lex(float64))),
+        lex(char('>')),
+    )
+        .map(|(_, t, _)| t))
 }
 
 fn lex<P>(p: P) -> impl Parser<Input = P::Input, Output = P::Output>
@@ -39,4 +47,29 @@ where
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
     lex_natural().map(|s| <u8 as Num>::from_str_radix(&s, 10).expect("u8"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_type() {
+        assert_eq!(
+            parse_type().parse("< int 32 >"),
+            Ok((expr::Type::Int(32), ""))
+        );
+        assert_eq!(
+            parse_type().parse("<int 64>"),
+            Ok((expr::Type::Int(64), ""))
+        );
+        assert_eq!(
+            parse_type().parse("< float 32 > hoge"),
+            Ok((expr::Type::Float32, "hoge"))
+        );
+        assert_eq!(
+            parse_type().parse("<float 64>"),
+            Ok((expr::Type::Float64, ""))
+        );
+    }
 }
