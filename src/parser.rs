@@ -9,7 +9,7 @@ where
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
     let int_ty = (string("int"), spaces(), parse_u8()).map(|(_, _, i)| expr::Type::Int(i));
-    (lex(char('<')), int_ty, lex(char('>'))).map(|(_, t, _)| t)
+    lex((lex(char('<')), lex(int_ty), lex(char('>'))).map(|(_, t, _)| t))
 }
 
 fn lex<P>(p: P) -> impl Parser<Input = P::Input, Output = P::Output>

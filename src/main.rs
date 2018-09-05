@@ -14,6 +14,6 @@ fn main() {
 
     println!("{:?}", val);
 
-    let ty = parser::parse_type().parse("<int 32>");
+    let ty = parser::parse_type().parse("< int   32  >   ");
     println!("{:?}", ty);
 }
