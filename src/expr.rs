@@ -1,6 +1,6 @@
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash)]
 pub enum Type {
-    Int(i8),
+    Int(u8),
     Float32,
     Float64,
     String,

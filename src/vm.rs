@@ -5,7 +5,7 @@ use std::rc::Rc;
 #[derive(Clone)]
 pub struct VM {
     env: HashMap<Id, Value>,
-    prims: HashMap<String, Rc<Fn(&VM, Vec<Value>) -> Value>>,
+    prims: HashMap<String, Rc<dyn Fn(&VM, Vec<Value>) -> Value>>,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -51,26 +51,27 @@ impl HasType for Value {
 #[allow(dead_code)]
 impl VM {
     pub fn new() -> Self {
-        let mut prims: HashMap<String, Rc<Fn(&VM, Vec<Value>) -> Value>> = HashMap::new();
-        prims.insert("add".to_string(), Rc::new(VM::add));
-        prims.insert("sub".to_string(), Rc::new(VM::sub));
-        prims.insert("mul".to_string(), Rc::new(VM::mul));
-        prims.insert("div".to_string(), Rc::new(VM::div));
-        prims.insert("mod".to_string(), Rc::new(VM::modulo));
-        prims.insert("eq".to_string(), Rc::new(VM::eq));
-        prims.insert("neq".to_string(), Rc::new(VM::neq));
-        prims.insert("lt".to_string(), Rc::new(VM::lt));
-        prims.insert("gt".to_string(), Rc::new(VM::gt));
-        prims.insert("le".to_string(), Rc::new(VM::le));
-        prims.insert("ge".to_string(), Rc::new(VM::ge));
-        prims.insert("and".to_string(), Rc::new(VM::and));
-        prims.insert("or".to_string(), Rc::new(VM::or));
-        prims.insert("puts".to_string(), Rc::new(VM::puts));
-        prims.insert("to_string".to_string(), Rc::new(VM::to_string));
-        VM {
+        let mut vm = VM {
             env: HashMap::new(),
-            prims: prims,
-        }
+            prims: HashMap::new(),
+        };
+        vm.prims.insert("add".to_string(), Rc::new(VM::add));
+        vm.prims.insert("sub".to_string(), Rc::new(VM::sub));
+        vm.prims.insert("mul".to_string(), Rc::new(VM::mul));
+        vm.prims.insert("div".to_string(), Rc::new(VM::div));
+        vm.prims.insert("mod".to_string(), Rc::new(VM::modulo));
+        vm.prims.insert("eq".to_string(), Rc::new(VM::eq));
+        vm.prims.insert("neq".to_string(), Rc::new(VM::neq));
+        vm.prims.insert("lt".to_string(), Rc::new(VM::lt));
+        vm.prims.insert("gt".to_string(), Rc::new(VM::gt));
+        vm.prims.insert("le".to_string(), Rc::new(VM::le));
+        vm.prims.insert("ge".to_string(), Rc::new(VM::ge));
+        vm.prims.insert("and".to_string(), Rc::new(VM::and));
+        vm.prims.insert("or".to_string(), Rc::new(VM::or));
+        vm.prims.insert("puts".to_string(), Rc::new(VM::puts));
+        vm.prims
+            .insert("to_string".to_string(), Rc::new(VM::to_string));
+        vm
     }
 
     fn add(&self, args: Vec<Value>) -> Value {
@@ -132,8 +133,9 @@ impl VM {
             [Value::String(ref a), Value::String(ref b)] => Value::Bool(a == b),
             [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
                 xs.iter()
-                    .zip(ys.iter())
-                    .map(|(x, y)| self.eq(vec![x.clone(), y.clone()]))
+                    .cloned()
+                    .zip(ys.iter().cloned())
+                    .map(|(x, y)| self.eq(vec![x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for eq: {:?}", args),
@@ -151,8 +153,9 @@ impl VM {
             [Value::String(ref a), Value::String(ref b)] => Value::Bool(a != b),
             [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
                 xs.iter()
-                    .zip(ys.iter())
-                    .map(|(x, y)| self.neq(vec![x.clone(), y.clone()]))
+                    .cloned()
+                    .zip(ys.iter().cloned())
+                    .map(|(x, y)| self.neq(vec![x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for neq: {:?}", args),
@@ -170,8 +173,9 @@ impl VM {
             [Value::String(ref a), Value::String(ref b)] => Value::Bool(a < b),
             [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
                 xs.iter()
-                    .zip(ys.iter())
-                    .map(|(x, y)| self.lt(vec![x.clone(), y.clone()]))
+                    .cloned()
+                    .zip(ys.iter().cloned())
+                    .map(|(x, y)| self.lt(vec![x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for lt: {:?}", args),
@@ -189,8 +193,9 @@ impl VM {
             [Value::String(ref a), Value::String(ref b)] => Value::Bool(a > b),
             [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
                 xs.iter()
-                    .zip(ys.iter())
-                    .map(|(x, y)| self.gt(vec![x.clone(), y.clone()]))
+                    .cloned()
+                    .zip(ys.iter().cloned())
+                    .map(|(x, y)| self.gt(vec![x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for gt: {:?}", args),
@@ -208,8 +213,9 @@ impl VM {
             [Value::String(ref a), Value::String(ref b)] => Value::Bool(a <= b),
             [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
                 xs.iter()
-                    .zip(ys.iter())
-                    .map(|(x, y)| self.le(vec![x.clone(), y.clone()]))
+                    .cloned()
+                    .zip(ys.iter().cloned())
+                    .map(|(x, y)| self.le(vec![x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for le: {:?}", args),
@@ -227,8 +233,9 @@ impl VM {
             [Value::String(ref a), Value::String(ref b)] => Value::Bool(a >= b),
             [Value::Tuple(ref xs), Value::Tuple(ref ys)] => Value::Bool(
                 xs.iter()
-                    .zip(ys.iter())
-                    .map(|(x, y)| self.ge(vec![x.clone(), y.clone()]))
+                    .cloned()
+                    .zip(ys.iter().cloned())
+                    .map(|(x, y)| self.ge(vec![x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for ge: {:?}", args),
@@ -278,8 +285,7 @@ impl VM {
                 _ => panic!("invalid args for to_string: {:?}", x),
             }
         }
-        let s = to_string_helper(args);
-        Value::String(Rc::new(s))
+        Value::String(Rc::new(to_string_helper(args)))
     }
 
     pub fn eval(&mut self, program: Program, entry: Block) {
@@ -308,6 +314,7 @@ impl VM {
     }
 
     fn eval_block(&mut self, block: Block) -> Value {
+        let env_backup = self.env.clone();
         for l in block.exprs.iter() {
             match l {
                 Let::NonRec { name, val } => {
@@ -335,7 +342,9 @@ impl VM {
                 }
             }
         }
-        self.eval_expr(&block.term)
+        let val = self.eval_expr(&block.term);
+        self.env = env_backup;
+        val
     }
 
     pub fn eval_expr(&mut self, expr: &Expr) -> Value {
@@ -353,13 +362,10 @@ impl VM {
                     .map(|x| self.env.get(x).unwrap().clone())
                     .collect(),
             )),
-            Expr::Access(x, i) => {
-                let x = self.env.get(x).unwrap();
-                match x {
-                    Value::Tuple(xs) => xs.iter().nth(*i).unwrap().clone(),
-                    _ => panic!("{:?} is not tuple", x),
-                }
-            }
+            Expr::Access(x, i) => match self.env.get(x).unwrap() {
+                Value::Tuple(xs) => xs.iter().nth(*i).unwrap().clone(),
+                x => panic!("{:?} is not tuple", x),
+            },
             Expr::Apply(f, args) => {
                 let f = self.env.get(f).unwrap();
                 let args: Vec<_> = args
@@ -369,9 +375,15 @@ impl VM {
                 match f {
                     Value::Func { params, env, body } => {
                         let mut env = env.clone();
-                        params.iter().zip(args.iter()).for_each(|(p, a)| {
-                            env.insert(p.clone(), a.clone());
-                        });
+                        assert_eq!(params.len(), args.len());
+                        params
+                            .iter()
+                            .cloned()
+                            .zip(args.iter().cloned())
+                            .for_each(|(p, a)| {
+                                assert_eq!(p.type_of(), a.type_of());
+                                env.insert(p, a);
+                            });
                         let mut vm = VM::new();
                         vm.env = env;
                         vm.eval_block(body.clone())
@@ -384,14 +396,11 @@ impl VM {
                 }
             }
             Expr::Prim(key, t) => Value::Prim(key.clone(), t.clone()),
-            Expr::If(c, t, f) => {
-                let c = self.env.get(c).unwrap().clone();
-                match c {
-                    Value::Bool(false) => self.eval_block(*f.clone()),
-                    Value::Bool(true) => self.eval_block(*t.clone()),
-                    v => panic!("{:?} is not boolean", v),
-                }
-            }
+            Expr::If(c, t, f) => match self.env.get(c).unwrap().clone() {
+                Value::Bool(false) => self.eval_block(*f.clone()),
+                Value::Bool(true) => self.eval_block(*t.clone()),
+                v => panic!("{:?} is not boolean", v),
+            },
         }
     }
 }
