@@ -26,11 +26,7 @@ fn parse_type_[I]()(I) -> expr::Type
         .map(|(_, xs)| expr::Type::Tuple(xs));
     let func = (
         lex(string("fn")),
-        between(
-            lex(char('(')),
-            lex(char(')')),
-            many(parse_type())
-        ),
+        between(lex(char('(')), lex(char(')')), many(parse_type())),
         parse_type(),
     )
         .map(|(_, dom, codom)| expr::Type::Function {
