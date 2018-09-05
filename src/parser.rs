@@ -8,16 +8,43 @@ where
     I: Stream<Item = char>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
-    let int_ty = (string("int"), spaces(), parse_u8()).map(|(_, _, i)| expr::Type::Int(i));
-    let float32 = (string("float"), spaces(), string("32")).map(|_| expr::Type::Float32);
-    let float64 = (string("float"), spaces(), string("64")).map(|_| expr::Type::Float64);
+    parse_type_()
+}
 
-    lex((
-        lex(char('<')),
-        choice((lex(int_ty), try(lex(float32)), lex(float64))),
-        lex(char('>')),
+parser!{
+fn parse_type_[I]()(I) -> expr::Type
+    where [ I: Stream<Item = char> ]
+{
+    let int_ty = (lex(string("int")), parse_u8()).map(|(_, i)| expr::Type::Int(i));
+    let float32 = (lex(string("float")), string("32")).map(|_| expr::Type::Float32);
+    let float64 = (lex(string("float")), string("64")).map(|_| expr::Type::Float64);
+    let string_ty = lex(string("string")).map(|_| expr::Type::String);
+    let tuple = (
+        lex(string("tuple")),
+        many(parse_type()),
     )
-        .map(|(_, t, _)| t))
+        .map(|(_, xs)| expr::Type::Tuple(xs));
+    let func = (
+        lex(string("fn")),
+        lex(char('(')),
+        many(parse_type()),
+        lex(char(')')),
+        parse_type(),
+    )
+        .map(|(_, _, dom, _, codom)| expr::Type::Function {
+            dom: dom,
+            codom: Box::new(codom),
+        });
+
+    between(lex(char('<')), lex(char('>')), choice((
+        try(lex(int_ty)),
+        try(lex(float32)),
+        try(lex(float64)),
+        try(lex(string_ty)),
+        try(lex(tuple)),
+        lex(func),
+    )))
+}
 }
 
 fn lex<P>(p: P) -> impl Parser<Input = P::Input, Output = P::Output>
@@ -70,6 +97,52 @@ mod tests {
         assert_eq!(
             parse_type().parse("<float 64>"),
             Ok((expr::Type::Float64, ""))
+        );
+        assert_eq!(
+            parse_type().parse("< string >"),
+            Ok((expr::Type::String, ""))
+        );
+        assert_eq!(
+            parse_type().parse("<tuple>"),
+            Ok((expr::Type::Tuple(vec![]), ""))
+        );
+        assert_eq!(
+            parse_type().parse("<tuple <string> <int 32>>"),
+            Ok((
+                expr::Type::Tuple(vec![expr::Type::String, expr::Type::Int(32)]),
+                ""
+            ))
+        );
+        assert_eq!(
+            parse_type().parse("<tuple <string><int 32> <tuple>>"),
+            Ok((
+                expr::Type::Tuple(vec![
+                    expr::Type::String,
+                    expr::Type::Int(32),
+                    expr::Type::Tuple(vec![])
+                ]),
+                ""
+            ))
+        );
+        assert_eq!(
+            parse_type().parse("<fn () <string>>"),
+            Ok((
+                expr::Type::Function {
+                    codom: Box::new(expr::Type::String),
+                    dom: vec![],
+                },
+                ""
+            ))
+        );
+        assert_eq!(
+            parse_type().parse("<fn (<int 32> <int 32>) <int 32>>"),
+            Ok((
+                expr::Type::Function {
+                    codom: Box::new(expr::Type::Int(32)),
+                    dom: vec![expr::Type::Int(32), expr::Type::Int(32)],
+                },
+                ""
+            ))
         );
     }
 }
