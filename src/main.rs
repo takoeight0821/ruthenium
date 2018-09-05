@@ -10,7 +10,7 @@ fn main() {
 
     let mut vm = vm::VM::new();
     let expr = expr::Expr::String("hello, world\n".to_string());
-    let val = vm.eval_expr(&expr);
+    let val = vm.eval_expr(expr);
 
     println!("{:?}", val);
 

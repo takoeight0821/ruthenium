@@ -315,12 +315,12 @@ impl VM {
 
     fn eval_block(&mut self, block: Block) -> Value {
         let env_backup = self.env.clone();
-        for l in block.exprs.iter() {
+        for l in block.exprs.into_iter() {
             match l {
                 Let::NonRec { name, val } => {
-                    let v = self.eval_expr(&val);
+                    let v = self.eval_expr(val);
                     assert_eq!(name.type_of(), v.type_of());
-                    self.env.insert(name.clone(), v);
+                    self.env.insert(name, v);
                 }
                 Let::Rec { name, params, body } => {
                     match name.type_of() {
@@ -335,70 +335,68 @@ impl VM {
                     };
 
                     self.load_function(Func {
-                        name: name.clone(),
-                        params: params.clone(),
-                        body: body.clone(),
+                        name: name,
+                        params: params,
+                        body: body,
                     });
                 }
             }
         }
-        let val = self.eval_expr(&block.term);
+        let val = self.eval_expr(block.term);
         self.env = env_backup;
         val
     }
 
-    pub fn eval_expr(&mut self, expr: &Expr) -> Value {
+    pub fn eval_expr(&mut self, expr: Expr) -> Value {
         match expr {
-            Expr::Var(id) => self.env.get(id).unwrap().clone(),
-            Expr::I32(i) => Value::I32(i.clone()),
-            Expr::I64(i) => Value::I64(i.clone()),
-            Expr::F32(f) => Value::F32(f.clone()),
-            Expr::F64(f) => Value::F64(f.clone()),
-            Expr::Bool(b) => Value::Bool(b.clone()),
-            Expr::Char(c) => Value::Char(c.clone()),
-            Expr::String(s) => Value::String(Rc::new(s.clone())),
+            Expr::Var(id) => self.env.get(&id).unwrap().clone(),
+            Expr::I32(i) => Value::I32(i),
+            Expr::I64(i) => Value::I64(i),
+            Expr::F32(f) => Value::F32(f),
+            Expr::F64(f) => Value::F64(f),
+            Expr::Bool(b) => Value::Bool(b),
+            Expr::Char(c) => Value::Char(c),
+            Expr::String(s) => Value::String(Rc::new(s)),
             Expr::Tuple(xs) => Value::Tuple(Rc::new(
                 xs.iter()
                     .map(|x| self.env.get(x).unwrap().clone())
                     .collect(),
             )),
-            Expr::Access(x, i) => match self.env.get(x).unwrap() {
-                Value::Tuple(xs) => xs.iter().nth(*i).unwrap().clone(),
+            Expr::Access(x, i) => match self.env.get(&x).unwrap() {
+                Value::Tuple(xs) => xs.iter().nth(i).unwrap().clone(),
                 x => panic!("{:?} is not tuple", x),
             },
             Expr::Apply(f, args) => {
-                let f = self.env.get(f).unwrap();
+                let f = self.env.get(&f).unwrap().clone();
                 let args: Vec<_> = args
                     .iter()
                     .map(|x| self.env.get(x).unwrap().clone())
                     .collect();
                 match f {
-                    Value::Func { params, env, body } => {
-                        let mut env = env.clone();
+                    Value::Func { params, mut env, body } => {
                         assert_eq!(params.len(), args.len());
                         params
-                            .iter()
-                            .cloned()
-                            .zip(args.iter().cloned())
+                            .into_iter()
+                            .zip(args.into_iter())
                             .for_each(|(p, a)| {
                                 assert_eq!(p.type_of(), a.type_of());
                                 env.insert(p, a);
                             });
                         let mut vm = VM::new();
                         vm.env = env;
-                        vm.eval_block(body.clone())
+                        vm.eval_block(body)
                     }
                     Value::Prim(key, _) => {
-                        let f = self.prims.get(key).unwrap();
+                        let f = self.prims.get(&key).unwrap();
                         f(&self, args)
                     }
                     v => panic!("{:?} is not appliable", v),
                 }
             }
-            Expr::Prim(key, t) => Value::Prim(key.clone(), t.clone()),
-            Expr::If(c, t, f) => match self.env.get(c).unwrap().clone() {
-                Value::Bool(false) => self.eval_block(*f.clone()),
-                Value::Bool(true) => self.eval_block(*t.clone()),
+            Expr::Prim(key, t) => Value::Prim(key, t),
+            Expr::If(c, t, f) => match self.env.get(&c).unwrap().clone() {
+                Value::Bool(false) => self.eval_block(*f),
+                Value::Bool(true) => self.eval_block(*t),
                 v => panic!("{:?} is not boolean", v),
             },
         }
