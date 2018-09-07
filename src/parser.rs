@@ -1,4 +1,4 @@
-use combine::parser::char::{char, digit, spaces, string};
+use combine::parser::char::{alpha_num, char, digit, lower, spaces, string};
 use combine::*;
 use expr;
 use num::Num;
@@ -45,6 +45,30 @@ fn parse_type_[I]()(I) -> expr::Type
 }
 }
 
+fn parse_id<I>() -> impl Parser<Input = I, Output = expr::Id>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    between(
+        lex(char('[')),
+        lex(char(']')),
+        lex((
+            lower(),
+            many(alpha_num()),
+            spaces(),
+            char(':'),
+            spaces(),
+            parse_type(),
+        )),
+    ).map(
+        |(c, mut cs, _, _, _, ty): (char, String, _, _, _, expr::Type)| {
+            cs.insert(0, c);
+            expr::Id { name: cs, ty: ty }
+        },
+    )
+}
+
 fn lex<P>(p: P) -> impl Parser<Input = P::Input, Output = P::Output>
 where
     P: Parser,
@@ -77,6 +101,30 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_id() {
+        assert_eq!(
+            parse_id().parse("[hoge:<int 32>]"),
+            Ok((
+                expr::Id {
+                    name: "hoge".to_string(),
+                    ty: expr::Type::Int(32)
+                },
+                ""
+            ))
+        );
+        assert_eq!(
+            parse_id().parse("[  hoge  :  <  int 32  >  ]  "),
+            Ok((
+                expr::Id {
+                    name: "hoge".to_string(),
+                    ty: expr::Type::Int(32)
+                },
+                ""
+            ))
+        );
+    }
 
     #[test]
     fn test_type() {

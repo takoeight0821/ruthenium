@@ -102,9 +102,8 @@ pub struct Program {
 
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash)]
 pub struct Id {
-    name: String,
-    uniq: u64,
-    ty: Type,
+    pub name: String,
+    pub ty: Type,
 }
 
 impl HasType for Id {
