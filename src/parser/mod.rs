@@ -79,6 +79,10 @@ where
         lex(string("char")),
         lex(between(char('\''), char('\''), satisfy_char())),
     )).map(|(_, c)| Char(c));
+    let string_lit = with_parens((
+        lex(string("string")),
+        lex(between(char('\"'), char('\"'), many(satisfy_char()))),
+    )).map(|(_, cs)| String(cs));
 
     choice((
         try(var),
@@ -89,5 +93,6 @@ where
         try(true_lit),
         try(false_lit),
         try(char_lit),
+        try(string_lit),
     ))
 }
