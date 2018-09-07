@@ -1,6 +1,8 @@
 #[cfg(test)]
 use super::*;
+#[allow(unused_imports)]
 use expr::Expr::*;
+#[allow(unused_imports)]
 use expr::*;
 
 #[test]

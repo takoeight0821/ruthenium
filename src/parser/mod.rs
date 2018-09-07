@@ -47,7 +47,7 @@ fn parse_type_[I]()(I) -> expr::Type
 }
 }
 
-fn parse_id<I>() -> impl Parser<Input = I, Output = expr::Id>
+pub fn parse_id<I>() -> impl Parser<Input = I, Output = expr::Id>
 where
     I: Stream<Item = char>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
@@ -62,7 +62,7 @@ where
     })
 }
 
-fn parse_expr<I>() -> impl Parser<Input = I, Output = expr::Expr>
+pub fn parse_expr<I>() -> impl Parser<Input = I, Output = expr::Expr>
 where
     I: Stream<Item = char>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
