@@ -1,5 +1,7 @@
 use combine::*;
 use combine::parser::char::{char, digit, spaces};
+use num::Num;
+use std::fmt::Debug;
 
 pub fn with_parens<P>(p: P) -> impl Parser<Input = P::Input, Output = P::Output>
 where
@@ -35,18 +37,12 @@ where
     lex(many1(digit())).expected("unsigned integer")
 }
 
-pub fn parse_u8<I>() -> impl Parser<Input = I, Output = u8>
+pub fn parse_uint<I, N>() -> impl Parser<Input = I, Output = N>
 where
     I: Stream<Item = char>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
+    N: Num,
+    N::FromStrRadixErr: Debug,
 {
-    lex_natural().map(|s| u8::from_str_radix(&s, 10).expect("u8"))
-}
-
-pub fn parse_i32<I>() -> impl Parser<Input = I, Output = i32>
-where
-    I: Stream<Item = char>,
-    I::Error: ParseError<I::Item, I::Range, I::Position>,
-{
-    lex_natural().map(|s| i32::from_str_radix(&s, 10).expect("i32"))
+    lex_natural().map(|s| Num::from_str_radix(&s, 10).unwrap())
 }

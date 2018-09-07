@@ -17,7 +17,7 @@ parser!{
 fn parse_type_[I]()(I) -> expr::Type
     where [ I: Stream<Item = char> ]
 {
-    let int_ty = (lex(string("int")), parse_u8()).map(|(_, i)| expr::Type::Int(i));
+    let int_ty = (lex(string("int")), parse_uint()).map(|(_, i)| expr::Type::Int(i));
     let float32 = (lex(string("float")), string("32")).map(|_| expr::Type::Float32);
     let float64 = (lex(string("float")), string("64")).map(|_| expr::Type::Float64);
     let string_ty = lex(string("string")).map(|_| expr::Type::String);
@@ -69,6 +69,6 @@ where
 {
     use expr::Expr::*;
     let var = parse_id().map(|id| Var(id));
-    let int32 = with_parens((lex(string("i32")), parse_i32())).map(|(_, x)| I32(x));
+    let int32 = with_parens((lex(string("i32")), parse_uint())).map(|(_, x)| I32(x));
     choice((try(var), try(int32)))
 }
