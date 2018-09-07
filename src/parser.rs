@@ -53,20 +53,35 @@ where
     between(
         lex(char('[')),
         lex(char(']')),
-        lex((
-            lower(),
-            many(alpha_num()),
-            spaces(),
-            char(':'),
-            spaces(),
-            parse_type(),
-        )),
-    ).map(
-        |(c, mut cs, _, _, _, ty): (char, String, _, _, _, expr::Type)| {
-            cs.insert(0, c);
-            expr::Id { name: cs, ty: ty }
-        },
-    )
+        lex((lower(), lex(many(alpha_num())), parse_type())),
+    ).map(|(c, mut cs, ty): (char, String, expr::Type)| {
+        cs.insert(0, c);
+        expr::Id { name: cs, ty: ty }
+    })
+}
+
+fn parse_expr<I>() -> impl Parser<Input = I, Output = expr::Expr>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    use expr::Expr::*;
+    let var = parse_id().map(|id| Var(id));
+    let int32 = parse_parens((lex(string("i32")), parse_i32())).map(|(_, x)| I32(x));
+    choice((try(var), try(int32)))
+}
+
+fn parse_parens<P>(p: P) -> impl Parser<Input = P::Input, Output = P::Output>
+where
+    P: Parser,
+    P::Input: Stream<Item = char>,
+    <P::Input as StreamOnce>::Error: ParseError<
+        <P::Input as StreamOnce>::Item,
+        <P::Input as StreamOnce>::Range,
+        <P::Input as StreamOnce>::Position,
+    >,
+{
+    between(lex(char('(')), lex(char(')')), p)
 }
 
 fn lex<P>(p: P) -> impl Parser<Input = P::Input, Output = P::Output>
@@ -98,14 +113,40 @@ where
     lex_natural().map(|s| <u8 as Num>::from_str_radix(&s, 10).expect("u8"))
 }
 
+fn parse_i32<I>() -> impl Parser<Input = I, Output = i32>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    lex_natural().map(|s| <i32 as Num>::from_str_radix(&s, 10).expect("i32"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
+    fn test_expr() {
+        assert_eq!(
+            parse_expr().parse("[hoge<int 32>]"),
+            Ok((
+                expr::Expr::Var(expr::Id {
+                    name: "hoge".to_string(),
+                    ty: expr::Type::Int(32),
+                }),
+                ""
+            ))
+        );
+        assert_eq!(
+            parse_expr().parse("(i32 42)"),
+            Ok((expr::Expr::I32(42), ""))
+        );
+    }
+
+    #[test]
     fn test_id() {
         assert_eq!(
-            parse_id().parse("[hoge:<int 32>]"),
+            parse_id().parse("[hoge<int 32>]"),
             Ok((
                 expr::Id {
                     name: "hoge".to_string(),
@@ -115,7 +156,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            parse_id().parse("[  hoge  :  <  int 32  >  ]  "),
+            parse_id().parse("[  hoge  <  int 32  >  ]  "),
             Ok((
                 expr::Id {
                     name: "hoge".to_string(),

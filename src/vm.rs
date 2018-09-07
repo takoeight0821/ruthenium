@@ -373,15 +373,16 @@ impl VM {
                     .map(|x| self.env.get(x).unwrap().clone())
                     .collect();
                 match f {
-                    Value::Func { params, mut env, body } => {
+                    Value::Func {
+                        params,
+                        mut env,
+                        body,
+                    } => {
                         assert_eq!(params.len(), args.len());
-                        params
-                            .into_iter()
-                            .zip(args.into_iter())
-                            .for_each(|(p, a)| {
-                                assert_eq!(p.type_of(), a.type_of());
-                                env.insert(p, a);
-                            });
+                        params.into_iter().zip(args.into_iter()).for_each(|(p, a)| {
+                            assert_eq!(p.type_of(), a.type_of());
+                            env.insert(p, a);
+                        });
                         let mut vm = VM::new();
                         vm.env = env;
                         vm.eval_block(body)
