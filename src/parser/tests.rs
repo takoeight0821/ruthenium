@@ -18,7 +18,7 @@ fn test_expr() {
     assert_eq!(parse_expr().parse("(f64 -3.14)"), Ok((F64(-3.14), "")));
     assert_eq!(parse_expr().parse("( bool true ) "), Ok((Bool(true), "")));
     assert_eq!(parse_expr().parse("(bool false)"), Ok((Bool(false), "")));
-
+    assert_eq!(parse_expr().parse("( char 'c' ) "), Ok((Char('c'), "")));
 }
 
 #[test]

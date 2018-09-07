@@ -1,7 +1,7 @@
-use combine::parser::char::{char, digit, spaces};
 use combine::error::{Consumed, ParseError};
-use combine::parser::item::{any, satisfy, satisfy_map};
+use combine::parser::char::{char, digit, spaces};
 use combine::parser::choice::optional;
+use combine::parser::item::{any, satisfy, satisfy_map};
 use combine::*;
 use num::Num;
 use std::fmt::Debug;

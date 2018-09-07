@@ -75,7 +75,19 @@ where
     let float64 = with_parens((lex(string("f64")), parse_float())).map(|(_, x)| F64(x));
     let true_lit = with_parens((lex(string("bool")), lex(string("true")))).map(|_| Bool(true));
     let false_lit = with_parens((lex(string("bool")), lex(string("false")))).map(|_| Bool(false));
-    let char_lit = with_parens((lex(string("char")), lex(between(char('\''), char('\''), satisfy_char())))).map(|(_, c)| Char(c));
+    let char_lit = with_parens((
+        lex(string("char")),
+        lex(between(char('\''), char('\''), satisfy_char())),
+    )).map(|(_, c)| Char(c));
 
-    choice((try(var), try(int32), try(int64), try(float32), try(float64), try(true_lit), try(false_lit), try(char_lit)))
+    choice((
+        try(var),
+        try(int32),
+        try(int64),
+        try(float32),
+        try(float64),
+        try(true_lit),
+        try(false_lit),
+        try(char_lit),
+    ))
 }
