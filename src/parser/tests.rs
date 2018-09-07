@@ -11,7 +11,12 @@ fn test_expr() {
         parse_expr().parse("[hoge<int 32>]"),
         Ok((Var(Id("hoge".to_string(), Type::Int(32),)), ""))
     );
-    assert_eq!(parse_expr().parse("(i32 42)"), Ok((I32(42), "")));
+    assert_eq!(parse_expr().parse("( i32 42 ) "), Ok((I32(42), "")));
+    assert_eq!(parse_expr().parse("(i32 -42)"), Ok((I32(-42), "")));
+    assert_eq!(parse_expr().parse("( f32 3.1 ) "), Ok((F32(3.1), "")));
+    assert_eq!(parse_expr().parse("(f64 3.14)"), Ok((F64(3.14), "")));
+    assert_eq!(parse_expr().parse("(f64 -3.14)"), Ok((F64(-3.14), "")));
+
 }
 
 #[test]

@@ -1,4 +1,5 @@
 extern crate combine;
+extern crate regex;
 extern crate num;
 mod expr;
 mod parser;

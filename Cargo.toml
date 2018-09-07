@@ -6,3 +6,4 @@ authors = ["Yuya Kono <takohati0821@gmail.com>"]
 [dependencies]
 combine = "3.5.1"
 num = "0.2"
+regex = "1.0.5"

@@ -1,4 +1,5 @@
 use combine::parser::char::{char, digit, spaces};
+use combine::parser::choice::optional;
 use combine::*;
 use num::Num;
 use std::fmt::Debug;
@@ -45,4 +46,63 @@ where
     N::FromStrRadixErr: Debug,
 {
     lex_natural().map(|s| Num::from_str_radix(&s, 10).unwrap())
+}
+
+fn lex_integer<I>() -> impl Parser<Input = I, Output = String>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    lex((optional(char('-')), many1(digit()))).map(|(c, mut cs): (Option<char>, String)| {
+        match c {
+            Some(c) => cs.insert(0, c),
+            _ => {}
+        }
+        cs
+    })
+}
+
+pub fn parse_int<I, N>() -> impl Parser<Input = I, Output = N>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+    N: Num,
+    N::FromStrRadixErr: Debug,
+{
+    lex_integer().map(|s| Num::from_str_radix(&s, 10).unwrap())
+}
+
+fn lex_float<I>() -> impl Parser<Input = I, Output = String>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    lex((
+        optional(char('-')),
+        many1(digit()),
+        char('.'),
+        many1(digit()),
+    )).map(|(sign, mut cs1, _, cs2): (_, String, _, String)| {
+        match sign {
+            Some(c) => cs1.insert(0, c),
+            _ => {}
+        }
+        cs1.push('.');
+        cs1 + &*cs2
+    })
+}
+
+pub fn parse_float<I, N>() -> impl Parser<Input = I, Output = N>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+    N: Num,
+    N::FromStrRadixErr: Debug,
+{
+    lex_float().map(|s| Num::from_str_radix(&s, 10).unwrap())
+}
+
+#[test]
+fn test_parse_float() {
+    assert_eq!(parse_float().parse("-123.45"), Ok((-123.45, "")));
 }
