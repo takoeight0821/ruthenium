@@ -1,3 +1,6 @@
+use std::fmt;
+use std::fmt::Display;
+
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash)]
 pub enum Type {
     Int(u8),
@@ -6,6 +9,31 @@ pub enum Type {
     String,
     Tuple(Vec<Type>),
     Function { codom: Box<Type>, dom: Vec<Type> },
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Type::*;
+        write!(f, "<")?;
+        match self {
+            Int(x) => write!(f, "int {}", x)?,
+            Float32 => write!(f, "float 32")?,
+            Float64 => write!(f, "float 64")?,
+            String => write!(f, "string")?,
+            Tuple(xs) => xs.iter().map(|x| x.fmt(f)).collect::<fmt::Result>()?,
+            Function { codom, dom } => {
+                write!(f, "fn (")?;
+                dom.iter()
+                    .map(|x| {
+                        write!(f, " ");
+                        x.fmt(f)
+                    }).collect::<fmt::Result>()?;
+                write!(f, " ) -> ")?;
+                codom.fmt(f)
+            }?,
+        }
+        write!(f, ">")
+    }
 }
 
 pub trait HasType {
