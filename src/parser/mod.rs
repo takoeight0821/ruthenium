@@ -83,6 +83,7 @@ where
         lex(string("string")),
         lex(between(char('\"'), char('\"'), many(satisfy_char()))),
     )).map(|(_, cs)| String(cs));
+    let tuple = with_parens((lex(string("tuple")), many(parse_id()))).map(|(_, xs)| Tuple(xs));
 
     choice((
         try(var),
@@ -94,5 +95,6 @@ where
         try(false_lit),
         try(char_lit),
         try(string_lit),
+        try(tuple),
     ))
 }

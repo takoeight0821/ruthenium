@@ -23,6 +23,16 @@ fn test_expr() {
         parse_expr().parse(r#"(string "ho\"ge")"#),
         Ok((String("ho\"ge".to_string()), ""))
     );
+    assert_eq!(
+        parse_expr().parse("(tuple [hoge<int 32>] [fuga<float 64>])"),
+        Ok((
+            Tuple(vec![
+                Id("hoge".to_string(), Type::Int(32)),
+                Id("fuga".to_string(), Type::Float64)
+            ]),
+            ""
+        ))
+    );
 }
 
 #[test]
