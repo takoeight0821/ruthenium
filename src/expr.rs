@@ -19,7 +19,6 @@ impl HasType for Type {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-#[allow(dead_code)]
 pub enum Expr {
     Var(Id),
     I32(i32),
@@ -63,7 +62,6 @@ impl HasType for Expr {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-#[allow(dead_code)]
 pub enum Let {
     NonRec {
         name: Id,

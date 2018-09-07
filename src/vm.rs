@@ -9,7 +9,6 @@ pub struct VM {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-#[allow(dead_code)]
 pub enum Value {
     I32(i32),
     I64(i64),
@@ -48,7 +47,6 @@ impl HasType for Value {
     }
 }
 
-#[allow(dead_code)]
 impl VM {
     pub fn new() -> Self {
         let mut vm = VM {

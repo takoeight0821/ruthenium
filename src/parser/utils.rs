@@ -1,4 +1,6 @@
 use combine::parser::char::{char, digit, spaces};
+use combine::error::{Consumed, ParseError};
+use combine::parser::item::{any, satisfy, satisfy_map};
 use combine::parser::choice::optional;
 use combine::*;
 use num::Num;
@@ -105,4 +107,39 @@ where
 #[test]
 fn test_parse_float() {
     assert_eq!(parse_float().parse("-123.45"), Ok((-123.45, "")));
+}
+
+pub fn satisfy_char<I>() -> impl Parser<Input = I, Output = char>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    parser(|input: &mut I| {
+        let (c, comsumed) = try!(any().parse_lazy(input).into());
+        let mut back_slash_char = satisfy_map(|c| {
+            Some(match c {
+                '\'' => '\'',
+                '"' => '"',
+                '\\' => '\\',
+                'n' => '\n',
+                'r' => '\r',
+                't' => '\t',
+                _ => return None,
+            })
+        });
+        match c {
+            '\\' => comsumed.combine(|_| back_slash_char.parse_stream(input)),
+            '"' => Err(Consumed::Empty(I::Error::empty(input.position()).into())),
+            _ => Ok((c, comsumed)),
+        }
+    })
+}
+
+#[test]
+fn test_satisfy_char() {
+    assert_eq!(satisfy_char().parse("h"), Ok(('h', "")));
+    assert_eq!(satisfy_char().parse(r"\'"), Ok(('\'', "")));
+    assert_eq!(satisfy_char().parse(r#"\""#), Ok(('\"', "")));
+    assert_eq!(satisfy_char().parse(r"\n"), Ok(('\n', "")));
+    assert_eq!(satisfy_char().parse("字"), Ok(('字', "")));
 }
