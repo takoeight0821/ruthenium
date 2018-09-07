@@ -1,5 +1,5 @@
-use combine::*;
 use combine::parser::char::{char, digit, spaces};
+use combine::*;
 use num::Num;
 use std::fmt::Debug;
 

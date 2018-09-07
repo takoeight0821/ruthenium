@@ -58,7 +58,7 @@ where
         lex((lower(), lex(many(alpha_num())), parse_type())),
     ).map(|(c, mut cs, ty): (char, String, expr::Type)| {
         cs.insert(0, c);
-        expr::Id { name: cs, ty: ty }
+        expr::Id(cs, ty)
     })
 }
 

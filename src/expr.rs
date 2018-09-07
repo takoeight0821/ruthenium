@@ -101,13 +101,10 @@ pub struct Program {
 }
 
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash)]
-pub struct Id {
-    pub name: String,
-    pub ty: Type,
-}
+pub struct Id(pub String, pub Type);
 
 impl HasType for Id {
     fn type_of(&self) -> Type {
-        self.ty.clone()
+        self.1.clone()
     }
 }
