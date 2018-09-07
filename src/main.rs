@@ -1,5 +1,4 @@
 extern crate combine;
-extern crate num;
 mod expr;
 mod parser;
 mod vm;
