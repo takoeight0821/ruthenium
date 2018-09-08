@@ -1,6 +1,6 @@
 mod tests;
 mod utils;
-use combine::parser::char::{alpha_num, char, lower, string};
+use combine::parser::char::{alpha_num, char, lower, spaces, string};
 use combine::*;
 use expr;
 use parser::utils::*;
@@ -101,6 +101,8 @@ where
     let apply = with_parens((lex(string("apply")), parse_id(), many(parse_id())))
         .map(|(_, f, args)| Apply(f, args));
     let prim = parse_prim().map(|(name, ty)| Prim(name, ty));
+    let if_then_else = with_parens((lex(string("if")), parse_id(), parse_block(), parse_block()))
+        .map(|(_, c, t, f)| If(c, Box::new(t), Box::new(f)));
 
     choice((
         try(var),
@@ -116,5 +118,50 @@ where
         try(access),
         try(apply),
         try(prim),
+        if_then_else,
     ))
+}
+
+parser!{
+    fn parse_let_[I]()(I) -> expr::Let
+    where [ I: Stream<Item = char> ]
+    {
+        let nonrec = with_parens((lex(string("let")), parse_id(), parse_expr()))
+            .map(|(_, name, val)| expr::Let::NonRec { name, val });
+        let rec = with_parens((
+            lex(string("letrec")),
+            parse_id(),
+            many(parse_id()),
+            parse_block(),
+        )).map(|(_, name, params, body)| expr::Let::Rec { name, params, body });
+        choice((try(nonrec), rec))
+    }
+}
+
+pub fn parse_let<I>() -> impl Parser<Input = I, Output = expr::Let>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    parse_let_()
+}
+
+parser!{
+    fn parse_block_[I]()(I) -> expr::Block
+    where [ I: Stream<Item = char> ]
+    {
+        lex(between(
+            lex(char('{')),
+            lex(char('}')),
+            (many(parse_let()), lex(string("return")), parse_expr()),
+        )).map(|(exprs, _, term)| expr::Block { exprs, term })
+    }
+}
+
+pub fn parse_block<I>() -> impl Parser<Input = I, Output = expr::Block>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    parse_block_()
 }

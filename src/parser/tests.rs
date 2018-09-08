@@ -66,6 +66,68 @@ fn test_expr() {
         parse_expr().parse("[ #hoge <int 32> ]"),
         Ok((Prim("hoge".to_string(), Type::Int(32)), ""))
     );
+    assert_eq!(
+        parse_expr()
+            .parse("(if [c <int 1>] { (let [a <int 32>] (i32 42)) return [a <int 32>] } { return (i32 43) } )"),
+        Ok((
+            If(
+                Id("c".to_string(), Type::Int(1)),
+                Box::new(Block {
+                    exprs: vec![Let::NonRec {
+                        name: Id("a".to_string(), Type::Int(32)),
+                        val: I32(42)
+                    }],
+                    term: Var(Id("a".to_string(), Type::Int(32)))
+                }),
+                Box::new(Block {
+                    exprs: vec![],
+                    term: I32(43)
+                })
+            ),
+            ""
+        ))
+    );
+}
+
+#[test]
+fn test_block() {
+    assert_eq!(
+        parse_block().parse("{ (let [a <int 32>] (i32 42)) return [a <int 32>] }"),
+        Ok((
+            Block {
+                exprs: vec![Let::NonRec {
+                    name: Id("a".to_string(), Type::Int(32)),
+                    val: I32(42)
+                }],
+                term: Var(Id("a".to_string(), Type::Int(32)))
+            },
+            ""
+        ))
+    );
+    assert_eq!(
+        parse_block().parse("{ return (i32 43) }"),
+        Ok((
+            Block {
+                exprs: vec![],
+                term: I32(43)
+            },
+            ""
+        ))
+    );
+}
+
+#[test]
+fn test_let() {
+    assert_eq!(
+        parse_let().parse("(let [a <int 32>] (i32 42))"),
+        Ok((
+            Let::NonRec {
+                name: Id("a".to_string(), Type::Int(32)),
+                val: I32(42)
+            },
+            ""
+        ))
+    )
 }
 
 #[test]
