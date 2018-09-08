@@ -62,6 +62,18 @@ where
     })
 }
 
+fn parse_prim<I>() -> impl Parser<Input = I, Output = (String, expr::Type)>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    between(
+        lex(char('[')),
+        lex(char(']')),
+        lex((char('#'), lex(many(alpha_num())), parse_type())),
+    ).map(|(_, name, ty)| (name, ty))
+}
+
 pub fn parse_expr<I>() -> impl Parser<Input = I, Output = expr::Expr>
 where
     I: Stream<Item = char>,
@@ -84,6 +96,11 @@ where
         lex(between(char('\"'), char('\"'), many(satisfy_char()))),
     )).map(|(_, cs)| String(cs));
     let tuple = with_parens((lex(string("tuple")), many(parse_id()))).map(|(_, xs)| Tuple(xs));
+    let access = with_parens((lex(string("access")), parse_id(), parse_uint()))
+        .map(|(_, id, index)| Access(id, index));
+    let apply = with_parens((lex(string("apply")), parse_id(), many(parse_id())))
+        .map(|(_, f, args)| Apply(f, args));
+    let prim = parse_prim().map(|(name, ty)| Prim(name, ty));
 
     choice((
         try(var),
@@ -96,5 +113,8 @@ where
         try(char_lit),
         try(string_lit),
         try(tuple),
+        try(access),
+        try(apply),
+        try(prim),
     ))
 }

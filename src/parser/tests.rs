@@ -33,6 +33,39 @@ fn test_expr() {
             ""
         ))
     );
+    assert_eq!(
+        parse_expr().parse("(access [hoge <tuple <int 32> <int 32>>] 0)"),
+        Ok((
+            Access(
+                Id(
+                    "hoge".to_string(),
+                    Type::Tuple(vec![Type::Int(32), Type::Int(32)])
+                ),
+                0
+            ),
+            ""
+        ))
+    );
+    assert_eq!(
+        parse_expr().parse("(apply [f <fn (<int 32>) <int 32>>] [x <int 32>])"),
+        Ok((
+            Apply(
+                Id(
+                    "f".to_string(),
+                    Type::Function {
+                        codom: Box::new(Type::Int(32)),
+                        dom: vec![Type::Int(32)]
+                    }
+                ),
+                vec![Id("x".to_string(), Type::Int(32))]
+            ),
+            ""
+        ))
+    );
+    assert_eq!(
+        parse_expr().parse("[ #hoge <int 32> ]"),
+        Ok((Prim("hoge".to_string(), Type::Int(32)), ""))
+    );
 }
 
 #[test]

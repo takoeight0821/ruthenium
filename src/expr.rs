@@ -24,12 +24,9 @@ impl Display for Type {
             Function { codom, dom } => {
                 write!(f, "fn (")?;
                 dom.iter()
-                    .map(|x| {
-                        write!(f, " ");
-                        x.fmt(f)
-                    }).collect::<fmt::Result>()?;
-                write!(f, " ) -> ")?;
-                codom.fmt(f)
+                    .map(|x| write!(f, " {}", x))
+                    .collect::<fmt::Result>()?;
+                write!(f, " ) -> {}", codom)
             }?,
         }
         write!(f, ">")
@@ -128,6 +125,12 @@ pub struct Program {
 
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash)]
 pub struct Id(pub String, pub Type);
+
+impl Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{} : {}]", self.0, self.1)
+    }
+}
 
 impl HasType for Id {
     fn type_of(&self) -> Type {
