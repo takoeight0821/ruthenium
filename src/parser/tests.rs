@@ -6,6 +6,52 @@ use expr::Expr::*;
 use expr::*;
 
 #[test]
+fn test_func() {
+    assert_eq!(
+        parse_func()
+            .parse("(defn [f <fn (<int 32>) <int 32>>] [a <int 32>] { return [a <int 32>] })"),
+        Ok((
+            Func {
+                name: Id(
+                    "f".to_owned(),
+                    Type::Function {
+                        codom: Box::new(Type::Int(32)),
+                        dom: vec![Type::Int(32)]
+                    }
+                ),
+                params: vec![Id("a".to_owned(), Type::Int(32))],
+                body: Block {
+                    exprs: vec![],
+                    term: Var(Id("a".to_owned(), Type::Int(32)))
+                }
+            },
+            ""
+        ))
+    );
+
+    assert_eq!(
+        parse_func().parse("(defn [f <fn () <int 32>>] { return (i32 42) })"),
+        Ok((
+            Func {
+                name: Id(
+                    "f".to_owned(),
+                    Type::Function {
+                        codom: Box::new(Type::Int(32)),
+                        dom: vec![]
+                    }
+                ),
+                params: vec![],
+                body: Block {
+                    exprs: vec![],
+                    term: I32(42)
+                }
+            },
+            ""
+        ))
+    );
+}
+
+#[test]
 fn test_underscore() {
     assert_eq!(
         parse_id().parse("[foo_bar <int 32>]"),
