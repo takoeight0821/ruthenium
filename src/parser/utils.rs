@@ -1,7 +1,7 @@
 use combine::error::{Consumed, ParseError};
-use combine::parser::char::{char, digit, spaces};
+use combine::parser::char::{alpha_num, char, digit, spaces};
 use combine::parser::choice::optional;
-use combine::parser::item::{any, satisfy, satisfy_map};
+use combine::parser::item::{any, satisfy_map};
 use combine::*;
 use num::Num;
 use std::fmt::Debug;
@@ -142,4 +142,12 @@ fn test_satisfy_char() {
     assert_eq!(satisfy_char().parse(r#"\""#), Ok(('\"', "")));
     assert_eq!(satisfy_char().parse(r"\n"), Ok(('\n', "")));
     assert_eq!(satisfy_char().parse("字"), Ok(('字', "")));
+}
+
+pub fn parse_ident<I>() -> impl Parser<Input = I, Output = String>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    many(alpha_num().or(satisfy(|c| c == '_')))
 }

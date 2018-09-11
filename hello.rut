@@ -1,0 +1,13 @@
+(defn [f <fn (<int 32> <int 32>) <int 32>>] [a <int 32>] [b <int 32>]
+  { (let [add_i32 <fn (<int 32> <int 32>) <int 32>>] [#add <fn (<int 32> <int 32>) <int 32>>])
+    return (apply [add_i32 <fn (<int 32> <int 32>) <int 32>>] [a <int 32>] [b <int 32>])
+  })
+
+{ (let [a <int 32>] (i32 1))
+  (let [b <int 32>] (i32 2))
+  (let [c <int 32>] (apply [f <fn (<int 32> <int 32>) <int 32>>] [a <int 32>] [b <int 32>]))
+  (let [i32_to_string <fn (<int 32>) <string>>] [#to_string <fn (<int 32>) <string>>])
+  (let [s <string>] (apply [i32_to_string <fn (<int 32>) <string>>] [c <int 32>]))
+  (let [puts <fn (<string>) <tuple>>] [#puts <fn (<string>) <tuple>>])
+  return (apply [puts <fn (<string>) <tuple>>] [s <string>])
+  }

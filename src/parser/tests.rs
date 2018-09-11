@@ -6,10 +6,22 @@ use expr::Expr::*;
 use expr::*;
 
 #[test]
+fn test_underscore() {
+    assert_eq!(
+        parse_id().parse("[foo_bar <int 32>]"),
+        Ok((Id("foo_bar".to_string(), Type::Int(32)), ""))
+    );
+    assert_eq!(
+        parse_expr().parse("[ #foo_bar <int 32> ]"),
+        Ok((Prim("foo_bar".to_string(), Type::Int(32)), ""))
+    );
+}
+
+#[test]
 fn test_expr() {
     assert_eq!(
         parse_expr().parse("[hoge<int 32>]"),
-        Ok((Var(Id("hoge".to_string(), Type::Int(32),)), ""))
+        Ok((Var(Id("hoge".to_string(), Type::Int(32))), ""))
     );
     assert_eq!(parse_expr().parse("( i32 42 ) "), Ok((I32(42), "")));
     assert_eq!(parse_expr().parse("(i32 -42)"), Ok((I32(-42), "")));
@@ -47,7 +59,7 @@ fn test_expr() {
         ))
     );
     assert_eq!(
-        parse_expr().parse("(apply [f <fn (<int 32>) <int 32>>] [x <int 32>])"),
+        parse_expr().parse("(apply [f <fn (<int 32>) <int 32>>] [x <int 32>] )"),
         Ok((
             Apply(
                 Id(
@@ -92,7 +104,7 @@ fn test_expr() {
 #[test]
 fn test_block() {
     assert_eq!(
-        parse_block().parse("{ (let [a <int 32>] (i32 42)) return [a <int 32>] }"),
+        parse_block().parse("{\n(let [a <int 32>] (i32 42))\nreturn [a <int 32>]\n}"),
         Ok((
             Block {
                 exprs: vec![Let::NonRec {

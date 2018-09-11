@@ -1,6 +1,6 @@
 mod tests;
 mod utils;
-use combine::parser::char::{alpha_num, char, lower, spaces, string};
+use combine::parser::char::{char, lower, string};
 use combine::*;
 use expr;
 use parser::utils::*;
@@ -55,7 +55,7 @@ where
     between(
         lex(char('[')),
         lex(char(']')),
-        lex((lower(), lex(many(alpha_num())), parse_type())),
+        lex((lower(), lex(parse_ident()), parse_type())),
     ).map(|(c, mut cs, ty): (char, String, expr::Type)| {
         cs.insert(0, c);
         expr::Id(cs, ty)
@@ -70,7 +70,7 @@ where
     between(
         lex(char('[')),
         lex(char(']')),
-        lex((char('#'), lex(many(alpha_num())), parse_type())),
+        lex((char('#'), lex(parse_ident()), parse_type())),
     ).map(|(_, name, ty)| (name, ty))
 }
 
@@ -98,8 +98,8 @@ where
     let tuple = with_parens((lex(string("tuple")), many(parse_id()))).map(|(_, xs)| Tuple(xs));
     let access = with_parens((lex(string("access")), parse_id(), parse_uint()))
         .map(|(_, id, index)| Access(id, index));
-    let apply = with_parens((lex(string("apply")), parse_id(), many(parse_id())))
-        .map(|(_, f, args)| Apply(f, args));
+    let apply = with_parens((lex(string("apply")), many1(parse_id())))
+        .map(|(_, f_args): (_, Vec<_>)| Apply(f_args[0].to_owned(), f_args[1..].to_vec()));
     let prim = parse_prim().map(|(name, ty)| Prim(name, ty));
     let if_then_else = with_parens((lex(string("if")), parse_id(), parse_block(), parse_block()))
         .map(|(_, c, t, f)| If(c, Box::new(t), Box::new(f)));
@@ -164,4 +164,33 @@ where
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
     parse_block_()
+}
+
+pub fn parse_func<I>() -> impl Parser<Input = I, Output = expr::Func>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    with_parens((
+        lex(string("defn")),
+        parse_id(),
+        many(parse_id()),
+        parse_block(),
+    )).map(|(_, name, params, body)| expr::Func { name, params, body })
+}
+
+pub fn parse_program<I>() -> impl Parser<Input = I, Output = expr::Program>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    lex(many(parse_func())).map(|program| expr::Program { program })
+}
+
+pub fn parser<I>() -> impl Parser<Input = I, Output = (expr::Program, expr::Block)>
+where
+    I: Stream<Item = char>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    (parse_program(), parse_block())
 }
