@@ -13,7 +13,7 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 2 {
-        writeln!(std::io::stderr(), "Usage: {} FILE", args[0]);
+        writeln!(std::io::stderr(), "Usage: {} FILE", args[0])?;
         std::process::exit(1);
     }
 
