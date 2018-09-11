@@ -98,8 +98,8 @@ where
     let tuple = with_parens((lex(string("tuple")), many(parse_id()))).map(|(_, xs)| Tuple(xs));
     let access = with_parens((lex(string("access")), parse_id(), parse_uint()))
         .map(|(_, id, index)| Access(id, index));
-    let apply = with_parens((lex(string("apply")), many1(parse_id())))
-        .map(|(_, f_args): (_, Vec<_>)| Apply(f_args[0].to_owned(), f_args[1..].to_vec()));
+    let apply = with_parens((lex(string("apply")), parse_id(), many(parse_id())))
+        .map(|(_, f, args)| Apply(f, args));
     let prim = parse_prim().map(|(name, ty)| Prim(name, ty));
     let if_then_else = with_parens((lex(string("if")), parse_id(), parse_block(), parse_block()))
         .map(|(_, c, t, f)| If(c, Box::new(t), Box::new(f)));
@@ -119,7 +119,7 @@ where
         try(apply),
         try(prim),
         if_then_else,
-    ))
+    )).expected("expr")
 }
 
 parser!{
@@ -143,7 +143,7 @@ where
     I: Stream<Item = char>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
-    parse_let_()
+    parse_let_().expected("let")
 }
 
 parser!{
@@ -163,7 +163,7 @@ where
     I: Stream<Item = char>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
-    parse_block_()
+    parse_block_().expected("block")
 }
 
 pub fn parse_func<I>() -> impl Parser<Input = I, Output = expr::Func>
@@ -177,6 +177,7 @@ where
         many(parse_id()),
         parse_block(),
     )).map(|(_, name, params, body)| expr::Func { name, params, body })
+    .expected("func")
 }
 
 pub fn parse_program<I>() -> impl Parser<Input = I, Output = expr::Program>
