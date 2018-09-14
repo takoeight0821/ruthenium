@@ -286,9 +286,9 @@ impl VM {
         Value::String(Rc::new(to_string_helper(args)))
     }
 
-    pub fn eval(&mut self, program: Program, entry: Block) {
+    pub fn eval(&mut self, program: Program, entry: Block) -> Value {
         self.load_functions(program.program);
-        self.eval_block(entry);
+        self.eval_block(entry)
     }
 
     fn load_functions(&mut self, funcs: Vec<Func>) {
