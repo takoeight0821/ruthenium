@@ -32,7 +32,7 @@ fn parse_type_[I]()(I) -> expr::Type
         parse_type(),
     )
         .map(|(_, dom, codom)| expr::Type::Function {
-            dom: dom,
+            dom,
             codom: Box::new(codom),
         });
 
@@ -80,7 +80,7 @@ where
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
     use expr::Expr::*;
-    let var = parse_id().map(|id| Var(id));
+    let var = parse_id().map(Var);
     let int32 = with_parens((lex(string("i32")), parse_int())).map(|(_, x)| I32(x));
     let int64 = with_parens((lex(string("i64")), parse_int())).map(|(_, x)| I64(x));
     let float32 = with_parens((lex(string("f32")), parse_float())).map(|(_, x)| F32(x));

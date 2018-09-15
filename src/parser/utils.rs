@@ -56,9 +56,8 @@ where
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
     lex((optional(char('-')), many1(digit()))).map(|(c, mut cs): (Option<char>, String)| {
-        match c {
-            Some(c) => cs.insert(0, c),
-            _ => {}
+        if let Some(c) = c {
+            cs.insert(0, c)
         }
         cs
     })
@@ -85,9 +84,8 @@ where
         char('.'),
         many1(digit()),
     )).map(|(sign, mut cs1, _, cs2): (_, String, _, String)| {
-        match sign {
-            Some(c) => cs1.insert(0, c),
-            _ => {}
+        if let Some(c) = sign {
+            cs1.insert(0, c)
         }
         cs1.push('.');
         cs1 + &*cs2

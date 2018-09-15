@@ -1,11 +1,15 @@
 use expr::{Block, Expr, Func, HasType, Id, Let, Program, Type};
 use std::collections::HashMap;
+use std::f32;
+use std::f64;
 use std::rc::Rc;
+
+pub type PrimFunc = dyn Fn(&VM, &[Value]) -> Value;
 
 #[derive(Clone)]
 pub struct VM {
     env: HashMap<Id, Value>,
-    prims: HashMap<String, Rc<dyn Fn(&VM, Vec<Value>) -> Value>>,
+    prims: HashMap<String, Rc<PrimFunc>>,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -72,7 +76,7 @@ impl VM {
         vm
     }
 
-    fn add(&self, args: Vec<Value>) -> Value {
+    fn add(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::I32(a + b),
             [Value::I64(a), Value::I64(b)] => Value::I64(a + b),
@@ -82,7 +86,7 @@ impl VM {
         }
     }
 
-    fn sub(&self, args: Vec<Value>) -> Value {
+    fn sub(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::I32(a - b),
             [Value::I64(a), Value::I64(b)] => Value::I64(a - b),
@@ -92,7 +96,7 @@ impl VM {
         }
     }
 
-    fn mul(&self, args: Vec<Value>) -> Value {
+    fn mul(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::I32(a * b),
             [Value::I64(a), Value::I64(b)] => Value::I64(a * b),
@@ -102,7 +106,7 @@ impl VM {
         }
     }
 
-    fn div(&self, args: Vec<Value>) -> Value {
+    fn div(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::I32(a / b),
             [Value::I64(a), Value::I64(b)] => Value::I64(a / b),
@@ -112,7 +116,7 @@ impl VM {
         }
     }
 
-    fn modulo(&self, args: Vec<Value>) -> Value {
+    fn modulo(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::I32(a % b),
             [Value::I64(a), Value::I64(b)] => Value::I64(a % b),
@@ -120,7 +124,7 @@ impl VM {
         }
     }
 
-    fn eq(&self, args: Vec<Value>) -> Value {
+    fn eq(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::Bool(a == b),
             [Value::I64(a), Value::I64(b)] => Value::Bool(a == b),
@@ -133,19 +137,19 @@ impl VM {
                 xs.iter()
                     .cloned()
                     .zip(ys.iter().cloned())
-                    .map(|(x, y)| self.eq(vec![x, y]))
+                    .map(|(x, y)| self.eq(&[x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for eq: {:?}", args),
         }
     }
 
-    fn neq(&self, args: Vec<Value>) -> Value {
+    fn neq(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::Bool(a != b),
             [Value::I64(a), Value::I64(b)] => Value::Bool(a != b),
-            [Value::F32(a), Value::F32(b)] => Value::Bool(a != b),
-            [Value::F64(a), Value::F64(b)] => Value::Bool(a != b),
+            [Value::F32(a), Value::F32(b)] => Value::Bool((a - b).abs() < f32::EPSILON),
+            [Value::F64(a), Value::F64(b)] => Value::Bool((a - b).abs() < f64::EPSILON),
             [Value::Bool(a), Value::Bool(b)] => Value::Bool(a != b),
             [Value::Char(a), Value::Char(b)] => Value::Bool(a != b),
             [Value::String(ref a), Value::String(ref b)] => Value::Bool(a != b),
@@ -153,14 +157,14 @@ impl VM {
                 xs.iter()
                     .cloned()
                     .zip(ys.iter().cloned())
-                    .map(|(x, y)| self.neq(vec![x, y]))
+                    .map(|(x, y)| self.neq(&[x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for neq: {:?}", args),
         }
     }
 
-    fn lt(&self, args: Vec<Value>) -> Value {
+    fn lt(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::Bool(a < b),
             [Value::I64(a), Value::I64(b)] => Value::Bool(a < b),
@@ -173,14 +177,14 @@ impl VM {
                 xs.iter()
                     .cloned()
                     .zip(ys.iter().cloned())
-                    .map(|(x, y)| self.lt(vec![x, y]))
+                    .map(|(x, y)| self.lt(&[x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for lt: {:?}", args),
         }
     }
 
-    fn gt(&self, args: Vec<Value>) -> Value {
+    fn gt(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::Bool(a > b),
             [Value::I64(a), Value::I64(b)] => Value::Bool(a > b),
@@ -193,14 +197,14 @@ impl VM {
                 xs.iter()
                     .cloned()
                     .zip(ys.iter().cloned())
-                    .map(|(x, y)| self.gt(vec![x, y]))
+                    .map(|(x, y)| self.gt(&[x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for gt: {:?}", args),
         }
     }
 
-    fn le(&self, args: Vec<Value>) -> Value {
+    fn le(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::Bool(a <= b),
             [Value::I64(a), Value::I64(b)] => Value::Bool(a <= b),
@@ -213,14 +217,14 @@ impl VM {
                 xs.iter()
                     .cloned()
                     .zip(ys.iter().cloned())
-                    .map(|(x, y)| self.le(vec![x, y]))
+                    .map(|(x, y)| self.le(&[x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for le: {:?}", args),
         }
     }
 
-    fn ge(&self, args: Vec<Value>) -> Value {
+    fn ge(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::I32(a), Value::I32(b)] => Value::Bool(a >= b),
             [Value::I64(a), Value::I64(b)] => Value::Bool(a >= b),
@@ -233,28 +237,28 @@ impl VM {
                 xs.iter()
                     .cloned()
                     .zip(ys.iter().cloned())
-                    .map(|(x, y)| self.ge(vec![x, y]))
+                    .map(|(x, y)| self.ge(&[x, y]))
                     .all(|x| x == Value::Bool(true)),
             ),
             _ => panic!("invalid args for ge: {:?}", args),
         }
     }
 
-    fn and(&self, args: Vec<Value>) -> Value {
+    fn and(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::Bool(a), Value::Bool(b)] => Value::Bool(a & b),
             _ => panic!("invalid args for and: {:?}", args),
         }
     }
 
-    fn or(&self, args: Vec<Value>) -> Value {
+    fn or(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::Bool(a), Value::Bool(b)] => Value::Bool(a | b),
             _ => panic!("invalid args for or: {:?}", args),
         }
     }
 
-    fn puts(&self, args: Vec<Value>) -> Value {
+    fn puts(&self, args: &[Value]) -> Value {
         match args[..] {
             [Value::String(ref x)] => print!("{}", x),
             _ => panic!("invalid args for puts: {:?}", args),
@@ -262,8 +266,8 @@ impl VM {
         Value::Tuple(Rc::new(Vec::new()))
     }
 
-    fn to_string(&self, args: Vec<Value>) -> Value {
-        fn to_string_helper(x: Vec<Value>) -> String {
+    fn to_string(&self, args: &[Value]) -> Value {
+        fn to_string_helper(x: &[Value]) -> String {
             match x[..] {
                 [Value::I32(x)] => format!("{}", x),
                 [Value::I64(x)] => format!("{}", x),
@@ -276,7 +280,7 @@ impl VM {
                     "{{{}}}",
                     xs.iter()
                         .cloned()
-                        .map(|x| to_string_helper(vec![x]))
+                        .map(|x| to_string_helper(&[x]))
                         .collect::<Vec<_>>()
                         .join(", ")
                 ),
@@ -301,9 +305,9 @@ impl VM {
         match func {
             Func { name, params, body } => {
                 let f = Value::Func {
-                    params: params,
+                    params,
                     env: self.env.clone(),
-                    body: body,
+                    body,
                 };
                 assert_eq!(name.type_of(), f.type_of());
                 self.env.insert(name, f);
@@ -313,7 +317,7 @@ impl VM {
 
     fn eval_block(&mut self, block: Block) -> Value {
         let env_backup = self.env.clone();
-        for l in block.exprs.into_iter() {
+        for l in block.exprs {
             match l {
                 Let::NonRec { name, val } => {
                     let v = self.eval_expr(val);
@@ -332,11 +336,7 @@ impl VM {
                         t => panic!("{:?} is not function type", t),
                     };
 
-                    self.load_function(Func {
-                        name: name,
-                        params: params,
-                        body: body,
-                    });
+                    self.load_function(Func { name, params, body });
                 }
             }
         }
@@ -347,7 +347,7 @@ impl VM {
 
     pub fn eval_expr(&mut self, expr: Expr) -> Value {
         match expr {
-            Expr::Var(id) => self.env.get(&id).unwrap().clone(),
+            Expr::Var(id) => self.env[&id].clone(),
             Expr::I32(i) => Value::I32(i),
             Expr::I64(i) => Value::I64(i),
             Expr::F32(f) => Value::F32(f),
@@ -355,21 +355,16 @@ impl VM {
             Expr::Bool(b) => Value::Bool(b),
             Expr::Char(c) => Value::Char(c),
             Expr::String(s) => Value::String(Rc::new(s)),
-            Expr::Tuple(xs) => Value::Tuple(Rc::new(
-                xs.iter()
-                    .map(|x| self.env.get(x).unwrap().clone())
-                    .collect(),
-            )),
-            Expr::Access(x, i) => match self.env.get(&x).unwrap() {
+            Expr::Tuple(xs) => {
+                Value::Tuple(Rc::new(xs.iter().map(|x| self.env[x].clone()).collect()))
+            }
+            Expr::Access(x, i) => match &self.env[&x] {
                 Value::Tuple(xs) => xs.iter().nth(i).unwrap().clone(),
                 x => panic!("{:?} is not tuple", x),
             },
             Expr::Apply(f, args) => {
-                let f = self.env.get(&f).unwrap().clone();
-                let args: Vec<_> = args
-                    .iter()
-                    .map(|x| self.env.get(x).unwrap().clone())
-                    .collect();
+                let f = self.env[&f].clone();
+                let args: Vec<_> = args.iter().map(|x| self.env[x].clone()).collect();
                 match f {
                     Value::Func {
                         params,
@@ -386,14 +381,14 @@ impl VM {
                         vm.eval_block(body)
                     }
                     Value::Prim(key, _) => {
-                        let f = self.prims.get(&key).unwrap();
-                        f(&self, args)
+                        let f = &self.prims[&key];
+                        f(&self, &args)
                     }
                     v => panic!("{:?} is not appliable", v),
                 }
             }
             Expr::Prim(key, t) => Value::Prim(key, t),
-            Expr::If(c, t, f) => match self.env.get(&c).unwrap().clone() {
+            Expr::If(c, t, f) => match self.env[&c].clone() {
                 Value::Bool(false) => self.eval_block(*f),
                 Value::Bool(true) => self.eval_block(*t),
                 v => panic!("{:?} is not boolean", v),

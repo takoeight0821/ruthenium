@@ -73,7 +73,7 @@ impl HasType for Expr {
             Expr::String(_) => Type::String,
             Expr::Tuple(xs) => Type::Tuple(xs.iter().map(HasType::type_of).collect()),
             Expr::Access(x, i) => match x.type_of() {
-                Type::Tuple(ts) => ts.iter().nth(*i).unwrap().clone(),
+                Type::Tuple(ts) => ts[*i].clone(),
                 t => panic!("{:?} is not accessable", t),
             },
             Expr::Apply(f, _) => match f.type_of() {
