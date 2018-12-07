@@ -2,7 +2,8 @@
 name = "ruthenium"
 version = "0.1.0"
 authors = ["Yuya Kono <takohati0821@gmail.com>"]
+edition = "2018"
 
 [dependencies]
-combine = "3.5.1"
-num = "0.2"
+combine = "3.6.3"
+num = "0.2.0"
