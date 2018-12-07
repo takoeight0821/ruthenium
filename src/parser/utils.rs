@@ -83,7 +83,8 @@ where
         many1(digit()),
         char('.'),
         many1(digit()),
-    )).map(|(sign, mut cs1, _, cs2): (_, String, _, String)| {
+    ))
+    .map(|(sign, mut cs1, _, cs2): (_, String, _, String)| {
         if let Some(c) = sign {
             cs1.insert(0, c)
         }
@@ -113,7 +114,7 @@ where
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
     parser(|input: &mut I| {
-        let (c, comsumed) = try!(any().parse_lazy(input).into());
+        let (c, comsumed) = any().parse_lazy(input).into()?;
         let mut back_slash_char = satisfy_map(|c| {
             Some(match c {
                 '\'' => '\'',

@@ -13,7 +13,7 @@ where
     parse_type_()
 }
 
-parser!{
+parser! {
 fn parse_type_[I]()(I) -> expr::Type
     where [ I: Stream<Item = char> ]
 {
@@ -37,11 +37,11 @@ fn parse_type_[I]()(I) -> expr::Type
         });
 
     between(lex(char('<')), lex(char('>')), choice((
-        try(lex(int_ty)),
-        try(lex(float32)),
-        try(lex(float64)),
-        try(lex(string_ty)),
-        try(lex(tuple)),
+        attempt(lex(int_ty)),
+        attempt(lex(float32)),
+        attempt(lex(float64)),
+        attempt(lex(string_ty)),
+        attempt(lex(tuple)),
         lex(func),
     )))
 }
@@ -56,7 +56,8 @@ where
         lex(char('[')),
         lex(char(']')),
         lex((lower(), lex(parse_ident()), parse_type())),
-    ).map(|(c, mut cs, ty): (char, String, expr::Type)| {
+    )
+    .map(|(c, mut cs, ty): (char, String, expr::Type)| {
         cs.insert(0, c);
         expr::Id(cs, ty)
     })
@@ -71,7 +72,8 @@ where
         lex(char('[')),
         lex(char(']')),
         lex((char('#'), lex(parse_ident()), parse_type())),
-    ).map(|(_, name, ty)| (name, ty))
+    )
+    .map(|(_, name, ty)| (name, ty))
 }
 
 pub fn parse_expr<I>() -> impl Parser<Input = I, Output = expr::Expr>
@@ -90,11 +92,13 @@ where
     let char_lit = with_parens((
         lex(string("char")),
         lex(between(char('\''), char('\''), satisfy_char())),
-    )).map(|(_, c)| Char(c));
+    ))
+    .map(|(_, c)| Char(c));
     let string_lit = with_parens((
         lex(string("string")),
         lex(between(char('\"'), char('\"'), many(satisfy_char()))),
-    )).map(|(_, cs)| String(cs));
+    ))
+    .map(|(_, cs)| String(cs));
     let tuple = with_parens((lex(string("tuple")), many(parse_id()))).map(|(_, xs)| Tuple(xs));
     let access = with_parens((lex(string("access")), parse_id(), parse_uint()))
         .map(|(_, id, index)| Access(id, index));
@@ -105,24 +109,25 @@ where
         .map(|(_, c, t, f)| If(c, Box::new(t), Box::new(f)));
 
     choice((
-        try(var),
-        try(int32),
-        try(int64),
-        try(float32),
-        try(float64),
-        try(true_lit),
-        try(false_lit),
-        try(char_lit),
-        try(string_lit),
-        try(tuple),
-        try(access),
-        try(apply),
-        try(prim),
+        attempt(var),
+        attempt(int32),
+        attempt(int64),
+        attempt(float32),
+        attempt(float64),
+        attempt(true_lit),
+        attempt(false_lit),
+        attempt(char_lit),
+        attempt(string_lit),
+        attempt(tuple),
+        attempt(access),
+        attempt(apply),
+        attempt(prim),
         if_then_else,
-    )).expected("expr")
+    ))
+    .expected("expr")
 }
 
-parser!{
+parser! {
     fn parse_let_[I]()(I) -> expr::Let
     where [ I: Stream<Item = char> ]
     {
@@ -134,7 +139,7 @@ parser!{
             many(parse_id()),
             parse_block(),
         )).map(|(_, name, params, body)| expr::Let::Rec { name, params, body });
-        choice((try(nonrec), rec))
+        choice((attempt(nonrec), rec))
     }
 }
 
@@ -146,7 +151,7 @@ where
     parse_let_().expected("let")
 }
 
-parser!{
+parser! {
     fn parse_block_[I]()(I) -> expr::Block
     where [ I: Stream<Item = char> ]
     {
@@ -176,7 +181,8 @@ where
         parse_id(),
         many(parse_id()),
         parse_block(),
-    )).map(|(_, name, params, body)| expr::Func { name, params, body })
+    ))
+    .map(|(_, name, params, body)| expr::Func { name, params, body })
     .expected("func")
 }
 
