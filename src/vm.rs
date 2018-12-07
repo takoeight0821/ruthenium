@@ -1,4 +1,4 @@
-use expr::{Block, Expr, Func, HasType, Id, Let, Program, Type};
+use crate::expr::{Block, Expr, Func, HasType, Id, Let, Program, Type};
 use std::collections::HashMap;
 use std::f32;
 use std::f64;

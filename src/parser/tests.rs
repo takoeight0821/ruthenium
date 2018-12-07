@@ -1,9 +1,9 @@
 #[cfg(test)]
 use super::*;
 #[allow(unused_imports)]
-use expr::Expr::*;
+use crate::expr::Expr::*;
 #[allow(unused_imports)]
-use expr::*;
+use crate::expr::*;
 
 #[test]
 fn test_func() {

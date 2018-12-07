@@ -1,9 +1,9 @@
 mod tests;
 mod utils;
+use crate::expr;
+use crate::parser::utils::*;
 use combine::parser::char::{char, lower, string};
 use combine::*;
-use expr;
-use parser::utils::*;
 
 pub fn parse_type<I>() -> impl Parser<Input = I, Output = expr::Type>
 where
@@ -81,7 +81,7 @@ where
     I: Stream<Item = char>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
-    use expr::Expr::*;
+    use crate::expr::Expr::*;
     let var = parse_id().map(Var);
     let int32 = with_parens((lex(string("i32")), parse_int())).map(|(_, x)| I32(x));
     let int64 = with_parens((lex(string("i64")), parse_int())).map(|(_, x)| I64(x));
